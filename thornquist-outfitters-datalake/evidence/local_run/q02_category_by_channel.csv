@@ -1,0 +1,9 @@
+category,channel,units,revenue,avg_selling_price,pct_of_channel_revenue
+Apparel,online,185.0,31501.92,170.28,26.5
+Footwear,online,175.0,30499.15,174.28,25.7
+Camping,online,172.0,29653.23,172.4,25.0
+Accessories,online,166.0,27195.64,163.83,22.9
+Camping,store,337.0,56840.08,168.66,26.5
+Accessories,store,325.0,54127.67,166.55,25.2
+Apparel,store,305.0,54094.57,177.36,25.2
+Footwear,store,284.0,49499.46,174.29,23.1

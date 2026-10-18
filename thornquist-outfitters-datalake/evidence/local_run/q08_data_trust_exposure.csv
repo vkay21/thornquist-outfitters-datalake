@@ -1,0 +1,3 @@
+channel,orders,orphan_orders,orphan_customer_ids,orphan_revenue,orphan_revenue_pct,walk_in_revenue_pct
+online,260,34,28,17375.22,14.1,0.0
+store,1048,0,0,0.0,0.0,16.7

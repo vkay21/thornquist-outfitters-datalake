@@ -1,0 +1,71 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AthenaInAnalystWorkgroupOnly",
+      "Effect": "Allow",
+      "Action": [
+        "athena:StartQueryExecution",
+        "athena:GetQueryExecution",
+        "athena:GetQueryResults",
+        "athena:StopQueryExecution",
+        "athena:ListQueryExecutions",
+        "athena:GetWorkGroup",
+        "athena:BatchGetQueryExecution",
+        "athena:ListNamedQueries",
+        "athena:GetNamedQuery"
+      ],
+      "Resource": "arn:aws:athena:us-east-1:${ACCOUNT_ID}:workgroup/thornquist-analyst-wg"
+    },
+    {
+      "Sid": "CatalogMetadataViaLakeFormation",
+      "Effect": "Allow",
+      "Action": [
+        "glue:GetDatabase",
+        "glue:GetDatabases",
+        "glue:GetTable",
+        "glue:GetTables",
+        "glue:GetPartition",
+        "glue:GetPartitions",
+        "lakeformation:GetDataAccess"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "OwnQueryResultsOnly",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject"
+      ],
+      "Resource": "arn:aws:s3:::${BUCKET}/athena-results/analyst/*"
+    },
+    {
+      "Sid": "ListResultsPrefix",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetBucketLocation",
+        "s3:ListBucket"
+      ],
+      "Resource": "arn:aws:s3:::${BUCKET}",
+      "Condition": {
+        "StringLike": {
+          "s3:prefix": [
+            "athena-results/analyst/*"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "ExplicitlyNoUpstreamZones",
+      "Effect": "Deny",
+      "Action": "s3:*",
+      "Resource": [
+        "arn:aws:s3:::${BUCKET}/landing/*",
+        "arn:aws:s3:::${BUCKET}/raw/*",
+        "arn:aws:s3:::${BUCKET}/trusted/*",
+        "arn:aws:s3:::${BUCKET}/quarantine/*"
+      ]
+    }
+  ]
+}

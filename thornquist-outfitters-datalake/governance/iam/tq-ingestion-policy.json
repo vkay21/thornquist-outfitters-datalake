@@ -1,0 +1,46 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "WriteLandingOnly",
+      "Effect": "Allow",
+      "Action": "s3:PutObject",
+      "Resource": "arn:aws:s3:::${BUCKET}/landing/*"
+    },
+    {
+      "Sid": "PromoteLandingToRaw",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:DeleteObject"],
+      "Resource": "arn:aws:s3:::${BUCKET}/landing/*"
+    },
+    {
+      "Sid": "WriteRawNoOverwriteOrDelete",
+      "Effect": "Allow",
+      "Action": "s3:PutObject",
+      "Resource": "arn:aws:s3:::${BUCKET}/raw/*"
+    },
+    {
+      "Sid": "ListLandingRaw",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::${BUCKET}",
+      "Condition": { "StringLike": { "s3:prefix": ["landing/*", "raw/*"] } }
+    },
+    {
+      "Sid": "StartDownstreamCrawlersAndJobs",
+      "Effect": "Allow",
+      "Action": ["glue:StartCrawler", "glue:StartJobRun", "glue:StartWorkflowRun"],
+      "Resource": [
+        "arn:aws:glue:us-east-1:${ACCOUNT_ID}:crawler/tq-*",
+        "arn:aws:glue:us-east-1:${ACCOUNT_ID}:job/tq-*",
+        "arn:aws:glue:us-east-1:${ACCOUNT_ID}:workflow/tq-*"
+      ]
+    },
+    {
+      "Sid": "LambdaLogs",
+      "Effect": "Allow",
+      "Action": ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
+      "Resource": "arn:aws:logs:us-east-1:${ACCOUNT_ID}:log-group:/aws/lambda/tq-*"
+    }
+  ]
+}

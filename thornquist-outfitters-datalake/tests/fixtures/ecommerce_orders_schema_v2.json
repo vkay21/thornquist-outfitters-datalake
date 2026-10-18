@@ -1,0 +1,11 @@
+[
+  {"order_id": 910001, "order_timestamp": "2026-08-31T15:00:00Z", "cust_ref": 100010, "channel": "app",
+   "shipping_region": "Ontario", "promo_code": "FALL10", "gift_wrap": true,
+   "items": [{"sku": "CAM-1111", "product_name": "Camp Stove", "qty": 1, "unit_price": 80.00}], "order_total": 80.00},
+  {"order_id": 910002, "order_timestamp": "2026-08-31T16:30:00Z", "cust_ref": 100011, "channel": "online",
+   "shipping_region": "Quebec", "promo_code": null, "gift_wrap": false,
+   "items": [{"sku": "APP-2222", "product_name": "Rain Shell", "qty": 2, "unit_price": 100.00}], "order_total": 150.00},
+  {"order_id": 910003, "order_timestamp": "not-a-date", "cust_ref": 100012, "channel": "online",
+   "shipping_region": "Alberta", "promo_code": "VIP",
+   "items": [{"sku": "XYZ-9", "product_name": "Mystery", "qty": 1, "unit_price": 10.00}], "order_total": 10.00}
+]

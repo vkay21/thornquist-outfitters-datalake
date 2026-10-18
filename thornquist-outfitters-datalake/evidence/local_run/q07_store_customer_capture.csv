@@ -1,0 +1,11 @@
+store_id,store_name,region,transactions,revenue,avg_ticket,walk_in_pct,revenue_rank
+1,Toronto Yonge St,Ontario,105,23628.54,225.03,18.1,1
+7,Victoria Douglas,British Columbia,118,23591.13,199.92,19.5,2
+4,Montreal Ste-Catherine,Quebec,109,23431.18,214.96,15.6,3
+5,Quebec City Laurier,Quebec,119,23222.22,195.14,17.6,4
+9,Edmonton Whyte Ave,Alberta,112,22895.06,204.42,17.9,5
+8,Calgary Stephen Ave,Alberta,109,22552.85,206.91,19.3,6
+10,Halifax Spring Garden,Atlantic,107,20780.18,194.21,18.7,7
+6,Vancouver Robson,British Columbia,98,19272.1,196.65,21.4,8
+2,Toronto Scarborough,Ontario,88,18227.66,207.13,13.6,9
+3,Ottawa Rideau,Ontario,83,16960.86,204.35,13.3,10

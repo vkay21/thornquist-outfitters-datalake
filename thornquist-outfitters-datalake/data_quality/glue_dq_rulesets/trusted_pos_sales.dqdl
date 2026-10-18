@@ -1,0 +1,19 @@
+# Glue Data Quality ruleset (DQDL) - second line of defence on the TRUSTED table.
+# The PySpark gate (glue_jobs/lib/tq_dq.py) does row-level quarantine on the way in;
+# this ruleset re-asserts the contract on what actually landed in trusted, and its score
+# shows in the Glue console "Data quality" tab (nice screenshot evidence).
+# Attach: Glue console > Data Catalog > thornquist_trusted.pos_sales > Data quality > Create ruleset
+Rules = [
+    RowCount > 0,
+    IsComplete "transaction_id",
+    IsUnique "transaction_id",
+    IsComplete "sale_date",
+    IsComplete "product_name",
+    ColumnValues "quantity" between 0 and 51,
+    ColumnValues "unit_price" > 0,
+    ColumnValues "region" in ["Ontario","Quebec","Alberta","British Columbia","Atlantic"],
+    ColumnValues "category" in ["Apparel","Footwear","Camping","Accessories"],
+    ColumnValues "payment_method" in ["VISA","MASTERCARD","AMEX","DEBIT","GIFT_CARD"],
+    CustomSql "select count(*) from primary where cust_num = '0000000'" = 0,
+    CustomSql "select count(*) from primary where product_name <> trim(product_name)" = 0
+]

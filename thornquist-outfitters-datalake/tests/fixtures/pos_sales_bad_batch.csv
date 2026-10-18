@@ -1,0 +1,12 @@
+transaction_id,store_id,store_name,region,sale_date,category,product_name,quantity,unit_price,payment_method,cust_num
+700001,1,Toronto Yonge St,Ontario,2026-08-31,Camping,Camp Stove,1,89.99,VISA,100001
+700002,1,Toronto Yonge St,Ontario,31/08/2026,Apparel,Rain Shell,1,149.00,DEBIT,0000000
+700003,1,Toronto Yonge St,Ontario,2026-13-45,Footwear,Trail Runner Low,1,120.00,VISA,100002
+700004,2,Toronto Scarborough,Ontario,2026-08-31,Camping,2-Person Tent,-2,299.00,AMEX,100003
+700005,2,Toronto Scarborough,Ontario,2026-08-31,Accessories,Dry Bag 20L,1,0.00,VISA,100004
+700006,3,Ottawa Rideau,Nunavut,2026-08-31,Camping,Sleeping Pad,1,59.00,VISA,100005
+700007,3,Ottawa Rideau,Ontario,2026-08-31,Apparel,,1,79.00,VISA,100006
+700008,4,Montreal Ste-Catherine,Quebec,2026-08-31,Footwear,Alpine Hiking Shoe,1,189.00,BITCOIN,100007
+700009,4,Montreal Ste-Catherine,Quebec,2026-08-31,Camping,Camp Stove,1,89.99,VISA,999999
+700010,5,Quebec City Laurier,Quebec,2026-08-31,Apparel,Down Vest,1,139.00,VISA,12AB
+700001,1,Toronto Yonge St,Ontario,2026-08-31,Camping,Camp Stove,1,89.99,VISA,100001

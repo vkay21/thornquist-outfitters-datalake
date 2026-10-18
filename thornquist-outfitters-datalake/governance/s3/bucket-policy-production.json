@@ -1,0 +1,102 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DenyInsecureTransport",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": "s3:*",
+      "Resource": [
+        "arn:aws:s3:::${BUCKET}",
+        "arn:aws:s3:::${BUCKET}/*"
+      ],
+      "Condition": {
+        "Bool": {
+          "aws:SecureTransport": "false"
+        }
+      }
+    },
+    {
+      "Sid": "LandingRawOnlyIngestionAndEtl",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::${BUCKET}/landing/*",
+        "arn:aws:s3:::${BUCKET}/raw/*"
+      ],
+      "Condition": {
+        "ArnNotLike": {
+          "aws:PrincipalArn": [
+            "arn:aws:iam::${ACCOUNT_ID}:role/tq-glue-etl-role",
+            "arn:aws:iam::${ACCOUNT_ID}:role/tq-ingestion-role",
+            "arn:aws:iam::${ACCOUNT_ID}:role/tq-platform-admin-role"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "RawIsImmutable",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": [
+        "s3:DeleteObject",
+        "s3:DeleteObjectVersion"
+      ],
+      "Resource": "arn:aws:s3:::${BUCKET}/raw/*",
+      "Condition": {
+        "ArnNotLike": {
+          "aws:PrincipalArn": [
+            "arn:aws:iam::${ACCOUNT_ID}:role/tq-platform-admin-role"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "TrustedQuarantineOnlyEtlAndSteward",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::${BUCKET}/trusted/*",
+        "arn:aws:s3:::${BUCKET}/quarantine/*",
+        "arn:aws:s3:::${BUCKET}/dq_reports/*"
+      ],
+      "Condition": {
+        "ArnNotLike": {
+          "aws:PrincipalArn": [
+            "arn:aws:iam::${ACCOUNT_ID}:role/tq-data-steward-role",
+            "arn:aws:iam::${ACCOUNT_ID}:role/tq-glue-etl-role",
+            "arn:aws:iam::${ACCOUNT_ID}:role/tq-platform-admin-role"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "CuratedWritableOnlyByEtl",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": [
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": "arn:aws:s3:::${BUCKET}/curated/*",
+      "Condition": {
+        "ArnNotLike": {
+          "aws:PrincipalArn": [
+            "arn:aws:iam::${ACCOUNT_ID}:role/tq-glue-etl-role",
+            "arn:aws:iam::${ACCOUNT_ID}:role/tq-platform-admin-role"
+          ]
+        }
+      }
+    }
+  ]
+}

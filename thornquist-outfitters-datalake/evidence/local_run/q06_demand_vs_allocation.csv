@@ -1,0 +1,16 @@
+region,demand_rank,product_name,category,units,online_units,online_share_pct
+Alberta,1,Alpine Hiking Shoe,Footwear,34.0,10.0,29.4
+Alberta,2,Sleeping Bag -10C,Camping,34.0,6.0,17.6
+Alberta,3,Hydration Pack,Accessories,29.0,4.0,13.8
+Atlantic,1,Insulated Winter Boot,Footwear,22.0,16.0,72.7
+Atlantic,2,Sleeping Bag -10C,Camping,20.0,9.0,45.0
+Atlantic,3,Trail Runner Low,Footwear,20.0,13.0,65.0
+British Columbia,1,2-Person Tent,Camping,32.0,8.0,25.0
+British Columbia,2,Insulated Winter Boot,Footwear,25.0,9.0,36.0
+British Columbia,3,Merino Base Layer,Apparel,25.0,7.0,28.0
+Ontario,1,Fleece Pullover,Apparel,42.0,14.0,33.3
+Ontario,2,2-Person Tent,Camping,41.0,15.0,36.6
+Ontario,3,Trailrunner Boot,Footwear,35.0,11.0,31.4
+Quebec,1,Sleeping Pad,Camping,41.0,10.0,24.4
+Quebec,2,Wool Socks 3-Pack,Accessories,36.0,13.0,36.1
+Quebec,3,Alpine Hiking Shoe,Footwear,27.0,6.0,22.2

@@ -1,0 +1,9 @@
+customer_segment,channel,customers,orders,revenue,avg_order_value,units_per_order,revenue_per_customer
+Gold,online,11,17,5906.61,347.45,2.12,536.96
+Gold,store,35,82,17548.37,214.0,1.18,501.38
+Silver,online,37,50,25928.48,518.57,3.2,700.77
+Silver,store,71,183,34693.62,189.58,1.16,488.64
+Standard,online,124,154,70707.79,459.14,2.66,570.22
+Standard,store,247,598,126546.9,211.62,1.21,512.34
+Unmatched,online,28,33,16307.06,494.15,2.82,582.4
+Walk-in,store,0,185,35772.89,193.37,1.19,

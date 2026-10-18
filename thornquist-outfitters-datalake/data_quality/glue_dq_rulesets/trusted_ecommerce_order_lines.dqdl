@@ -1,0 +1,13 @@
+Rules = [
+    RowCount > 0,
+    IsComplete "order_id",
+    IsComplete "cust_num",
+    IsComplete "order_ts_utc",
+    IsComplete "line_no",
+    ColumnValues "quantity" between 0 and 51,
+    ColumnValues "unit_price" > 0,
+    ColumnValues "category" in ["Apparel","Footwear","Camping","Accessories"],
+    ColumnValues "shipping_region" in ["Ontario","Quebec","Alberta","British Columbia","Atlantic"],
+    ColumnValues "sku" matches "(APP|FOO|CAM|ACC)-[0-9]{4}",
+    CustomSql "select count(*) from primary where is_orphan_customer" <= 50
+]

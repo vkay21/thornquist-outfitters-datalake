@@ -1,0 +1,77 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ListLakeBucketByZone",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::${BUCKET}",
+      "Condition": { "StringLike": { "s3:prefix": [
+        "raw/*", "trusted/*", "quarantine/*", "dq_reports/*", "curated/*", "scripts/*", "tmp/*"
+      ] } }
+    },
+    {
+      "Sid": "ReadRawZone",
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::${BUCKET}/raw/*"
+    },
+    {
+      "Sid": "ReadWriteDownstreamZones",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+      "Resource": [
+        "arn:aws:s3:::${BUCKET}/trusted/*",
+        "arn:aws:s3:::${BUCKET}/quarantine/*",
+        "arn:aws:s3:::${BUCKET}/dq_reports/*",
+        "arn:aws:s3:::${BUCKET}/curated/*",
+        "arn:aws:s3:::${BUCKET}/tmp/*"
+      ]
+    },
+    {
+      "Sid": "ReadJobScripts",
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::${BUCKET}/scripts/*"
+    },
+    {
+      "Sid": "GlueCatalogThornquistOnly",
+      "Effect": "Allow",
+      "Action": [
+        "glue:GetDatabase", "glue:GetTable", "glue:GetTables", "glue:GetPartition", "glue:GetPartitions",
+        "glue:CreateTable", "glue:UpdateTable", "glue:BatchCreatePartition", "glue:CreatePartition",
+        "glue:UpdatePartition", "glue:BatchGetPartition"
+      ],
+      "Resource": [
+        "arn:aws:glue:us-east-1:${ACCOUNT_ID}:catalog",
+        "arn:aws:glue:us-east-1:${ACCOUNT_ID}:database/thornquist_*",
+        "arn:aws:glue:us-east-1:${ACCOUNT_ID}:table/thornquist_*/*"
+      ]
+    },
+    {
+      "Sid": "GlueDataQualityResults",
+      "Effect": "Allow",
+      "Action": ["glue:PublishDataQuality", "glue:GetDataQualityRuleset", "glue:StartDataQualityRulesetEvaluationRun"],
+      "Resource": "*"
+    },
+    {
+      "Sid": "LakeFormationDataAccess",
+      "Effect": "Allow",
+      "Action": "lakeformation:GetDataAccess",
+      "Resource": "*"
+    },
+    {
+      "Sid": "DQMetricsToOwnNamespaceOnly",
+      "Effect": "Allow",
+      "Action": "cloudwatch:PutMetricData",
+      "Resource": "*",
+      "Condition": { "StringLike": { "cloudwatch:namespace": ["Thornquist/*", "Glue"] } }
+    },
+    {
+      "Sid": "GlueJobLogs",
+      "Effect": "Allow",
+      "Action": ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
+      "Resource": "arn:aws:logs:us-east-1:${ACCOUNT_ID}:log-group:/aws-glue/*"
+    }
+  ]
+}

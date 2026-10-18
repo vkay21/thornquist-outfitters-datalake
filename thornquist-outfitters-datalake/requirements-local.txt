@@ -1,0 +1,7 @@
+pyspark>=3.5,<4.1
+duckdb>=1.0
+pandas>=2.0
+pyarrow>=14
+matplotlib>=3.8
+tabulate
+jupyter

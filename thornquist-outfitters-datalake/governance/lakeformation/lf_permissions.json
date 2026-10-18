@@ -1,0 +1,25 @@
+{
+  "description": "Lake Formation permission set (design artifact). Mirrors lf_grants.sh.",
+  "prerequisites": [
+    "Data lake admin: voclabs console role",
+    "Registered location: s3://${BUCKET}/curated",
+    "IAMAllowedPrincipals grants revoked on thornquist_curated so LF is authoritative"
+  ],
+  "grants": [
+    {"principal": "tq-glue-etl-role (LabRole in lab)", "resource": "DataLocation s3://${BUCKET}/curated", "permissions": ["DATA_LOCATION_ACCESS"]},
+    {"principal": "tq-glue-etl-role (LabRole in lab)", "resource": "Database thornquist_curated", "permissions": ["CREATE_TABLE", "ALTER", "DESCRIBE"]},
+    {"principal": "tq-glue-etl-role (LabRole in lab)", "resource": "Table thornquist_curated.*", "permissions": ["SELECT", "INSERT", "ALTER", "DESCRIBE"]},
+    {"principal": "tq-analyst-role", "resource": "Database thornquist_curated", "permissions": ["DESCRIBE"]},
+    {"principal": "tq-analyst-role", "resource": "Table thornquist_curated.fact_sales", "permissions": ["SELECT", "DESCRIBE"]},
+    {"principal": "tq-analyst-role", "resource": "Table thornquist_curated.agg_daily_sales", "permissions": ["SELECT", "DESCRIBE"]},
+    {"principal": "tq-analyst-role", "resource": "Table thornquist_curated.dim_customer", "columns_excluded": ["first_name", "last_name", "email"], "permissions": ["SELECT"]},
+    {"principal": "tq-regional-manager-ontario-role", "resource": "DataCellsFilter ontario_only on thornquist_curated.fact_sales", "row_filter": "region = 'Ontario'", "columns_excluded": ["cust_num"], "permissions": ["SELECT"]},
+    {"principal": "tq-data-steward-role", "resource": "Table thornquist_trusted.*", "permissions": ["SELECT", "DESCRIBE"]},
+    {"principal": "tq-data-steward-role", "resource": "Table thornquist_quarantine.*", "permissions": ["SELECT", "DESCRIBE"]}
+  ],
+  "explicitly_not_granted": [
+    "tq-analyst-role: any permission on thornquist_raw / thornquist_trusted / thornquist_quarantine",
+    "tq-analyst-role: PII columns of dim_customer",
+    "Anyone except ETL: INSERT/ALTER/DROP on curated tables"
+  ]
+}

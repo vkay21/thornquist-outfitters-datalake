@@ -1,0 +1,5 @@
+channel_mix,customers,pct_of_customers,gold_customers,revenue,revenue_per_customer,orders_per_customer
+1 - Omnichannel,159,39.8,10.0,177628.71,1117.16,3.77
+2 - Store only,194,48.5,25.0,97442.19,502.28,2.41
+3 - Online only,13,3.3,1.0,6260.87,481.61,1.31
+4 - No purchase this week,34,8.5,4.0,0.0,0.0,0.0

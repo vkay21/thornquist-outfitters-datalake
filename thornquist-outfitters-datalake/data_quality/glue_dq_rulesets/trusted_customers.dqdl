@@ -1,0 +1,9 @@
+Rules = [
+    RowCount between 100 and 1000000,
+    IsComplete "cust_num",
+    IsUnique "cust_num",
+    ColumnValues "cust_num" matches "[0-9]{6}",
+    ColumnValues "loyalty_tier" in ["Standard","Silver","Gold"],
+    ColumnValues "email" matches "[^@ ]+@[^@ ]+\\.[^@ ]+",
+    IsComplete "signup_date"
+]
