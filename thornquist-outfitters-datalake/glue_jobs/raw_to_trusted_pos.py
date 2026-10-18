@@ -1,16 +1,16 @@
 """
-Glue job: tq-raw-to-trusted-pos   (DQ gate for store point-of-sale exports)
+Glue job: thornquist-pos-dq-gate   (DQ gate for store point-of-sale exports)
 Raw daily POS CSVs -> remediation -> DQ gate -> trusted/pos_sales (Parquet, partitioned by sale_date)
 
-NOTE FOR INTEGRATION: Aish's POS raw->trusted job already handles conformance. This
-script is written so it can either (a) replace the final write step of that job, or
-(b) be called with the same raw path and produce trusted/pos_sales directly. Keep ONE
-of them in the Glue workflow, not both.
+INTEGRATION: an alternative to Aish's thornquist-pos-raw-to-trusted (same raw input,
+same trusted/pos/ output). deploy.sh wires exactly ONE of them into the workflow:
+POS_MODE=aish (default) or POS_MODE=gate. This one adds row-level quarantine, a DQ
+report and the walk-in/orphan flags; trusted_to_curated.py accepts either output.
 
 Arguments
   --raw_path               s3://<bucket>/raw/pos/
-  --trusted_customers_path s3://<bucket>/trusted/customers/
-  --trusted_path           s3://<bucket>/trusted/pos_sales/
+  --trusted_customers_path s3://<bucket>/trusted/customer/
+  --trusted_path           s3://<bucket>/trusted/pos/
   --quarantine_path        s3://<bucket>/quarantine/pos/
   --report_path            s3://<bucket>/dq_reports/pos/
   --max_reject_pct         optional, default 5

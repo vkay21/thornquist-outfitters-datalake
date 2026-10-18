@@ -1,7 +1,7 @@
 """
-Glue job: tq-raw-to-trusted-ecommerce
+Glue job: thornquist-ecommerce-raw-to-trusted
 Raw storefront order JSON (nested items[]) -> order-level DQ gate -> explode to lines
--> trusted/ecommerce_order_lines (Parquet, partitioned by sale_date)
+-> trusted/ecommerce (Parquet, partitioned by sale_date)
 
 Schema evolution (stretch goal): unknown top-level attributes that the storefront adds
 later (e.g. "promo_code") do NOT break the job - they are preserved as a JSON string in
@@ -9,8 +9,8 @@ later (e.g. "promo_code") do NOT break the job - they are preserved as a JSON st
 
 Arguments
   --raw_path               s3://<bucket>/raw/ecommerce/
-  --trusted_customers_path s3://<bucket>/trusted/customers/
-  --trusted_path           s3://<bucket>/trusted/ecommerce_order_lines/
+  --trusted_customers_path s3://<bucket>/trusted/customer/
+  --trusted_path           s3://<bucket>/trusted/ecommerce/
   --quarantine_path        s3://<bucket>/quarantine/ecommerce/
   --report_path            s3://<bucket>/dq_reports/ecommerce/
   --json_format            optional: "array" (default, one JSON array per file) or "lines" (JSONL)

@@ -1,6 +1,6 @@
 """
-Glue job: tq-trusted-to-curated
-trusted/{pos_sales, ecommerce_order_lines, customers}
+Glue job: thornquist-trusted-to-curated
+trusted/{pos, ecommerce, customer}
   -> curated/fact_sales       (one conformed sales model, Parquet, partitioned by channel + sale_date)
   -> curated/dim_customer     (Parquet, small, unpartitioned)
   -> curated/agg_daily_sales  (pre-aggregated for the dashboard, Parquet)
@@ -13,8 +13,10 @@ Conformed model resolves the cross-channel schema conflicts:
   C5 time zone/grain    -> e-com UTC timestamp kept as sale_ts_utc; POS has date only
 
 Arguments
-  --trusted_path  s3://<bucket>/trusted/
-  --curated_path  s3://<bucket>/curated/
+  --pos_path        s3://<bucket>/trusted/pos/        (Aish's job OR thornquist-pos-dq-gate)
+  --ecommerce_path  s3://<bucket>/trusted/ecommerce/
+  --customers_path  s3://<bucket>/trusted/customer/
+  --curated_path    s3://<bucket>/curated/
 """
 import os
 import sys
@@ -25,15 +27,54 @@ from pyspark.sql import functions as F
 
 import tq_common as C
 
-args = C.get_args(["trusted_path", "curated_path"])
+args = C.get_args(["pos_path", "ecommerce_path", "customers_path", "curated_path"])
 ctx = C.JobContext(args)
 spark = ctx.spark
-T = lambda p: C.join_path(args["trusted_path"], p)  # noqa: E731
 OUT = lambda p: C.join_path(args["curated_path"], p)  # noqa: E731
 
-pos = spark.read.parquet(T("pos_sales"))
-eco = spark.read.parquet(T("ecommerce_order_lines"))
-cust = spark.read.parquet(T("customers"))
+pos = spark.read.option("recursiveFileLookup", "false").parquet(args["pos_path"])
+eco = spark.read.parquet(args["ecommerce_path"])
+cust = spark.read.parquet(args["customers_path"])
+
+
+def conform_pos(df, customers):
+    """Accept either POS trusted schema.
+
+    * thornquist-pos-dq-gate output already carries is_walk_in / is_orphan_customer / dq_flags.
+    * Aish's thornquist-pos-raw-to-trusted output keeps the source columns: sale_date as a
+      yyyy-MM-dd STRING, the 0000000 walk-in placeholder, and cust_num possibly typed as a
+      number by the crawler. Conform it here so both paths give identical curated rows.
+    """
+    if "is_walk_in" in df.columns:
+        return df
+    cust_s = F.trim(F.col("cust_num").cast("string"))
+    walk = cust_s.isNull() | cust_s.isin(C.WALK_IN_PLACEHOLDER, "0") | (cust_s == "")
+    ref = customers.select(F.col("cust_num").alias("_ref_cust")).distinct()
+    out = (
+        df.withColumn("is_walk_in", walk)
+        .withColumn("cust_num", F.when(walk, F.lit(None)).otherwise(F.lpad(cust_s, 6, "0")))
+        .withColumn("sale_date", F.coalesce(F.to_date(F.col("sale_date").cast("string"), "yyyy-MM-dd"),
+                                            F.to_date(F.col("sale_date").cast("string"), "dd/MM/yyyy")))
+        # Spark's trim() does not remove U+00A0, so normalise it explicitly.
+        .withColumn("product_name", F.trim(F.regexp_replace("product_name", " ", " ")))
+        .withColumn("transaction_id", F.col("transaction_id").cast("bigint"))
+        .withColumn("store_id", F.col("store_id").cast("int"))
+        .withColumn("quantity", F.col("quantity").cast("int"))
+        .withColumn("unit_price", F.col("unit_price").cast("decimal(10,2)"))
+        .withColumn("line_revenue", (F.col("quantity") * F.col("unit_price")).cast("decimal(12,2)"))
+        .withColumn("currency", F.lit(C.CURRENCY))
+        .withColumn("payment_method", F.upper(F.trim("payment_method")))
+        .join(F.broadcast(ref), F.col("cust_num") == F.col("_ref_cust"), "left")
+        .withColumn("is_orphan_customer", F.col("cust_num").isNotNull() & F.col("_ref_cust").isNull())
+        .withColumn("dq_flags", F.when(F.col("is_orphan_customer"), F.array(F.lit("POS-08")))
+                    .otherwise(F.array().cast("array<string>")))
+    )
+    # Exact-duplicate removal (SELECT DISTINCT) does not catch a re-sent transaction_id
+    # whose other fields differ; keep one row per transaction_id defensively.
+    return out.dropDuplicates(["transaction_id"])
+
+
+pos = conform_pos(pos, cust)
 
 pos_c = pos.select(
     F.concat(F.lit("POS-"), F.col("transaction_id").cast("string"), F.lit("-1")).alias("sales_line_id"),

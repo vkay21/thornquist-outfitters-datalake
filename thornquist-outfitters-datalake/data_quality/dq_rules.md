@@ -26,7 +26,7 @@ Each run writes `dq_reports/<source>/batch_id=<id>/dq_report.json`, which Athena
 | POS-05 | POS | **Range** | unit_price is between 0.01 and 5,000 | REJECT | placeholder 0.00 prices |
 | POS-06 | POS | Validity | region, category and payment_method are in the reference domains | REJECT | – |
 | POS-07 | POS | Validity | a non-walk-in cust_num is 6 digits | REJECT | – |
-| POS-08 | POS | **Referential integrity** | cust_num exists in trusted/customers | FLAG | 0 in sample (the README expected some; see the report) |
+| POS-08 | POS | **Referential integrity** | cust_num exists in trusted/customer | FLAG | 0 in sample (the README expected some; see the report) |
 | ECO-01 | E-com | Completeness | order_id, order_timestamp, cust_ref and ≥1 item are present | REJECT | – |
 | ECO-02 | E-com | **Uniqueness** | order_id is unique (first copy wins) | REJECT | **5 webhook retries** |
 | ECO-03 | E-com | Validity | order_timestamp is valid ISO-8601 and plausible | REJECT | – |
@@ -34,7 +34,7 @@ Each run writes `dq_reports/<source>/batch_id=<id>/dq_report.json`, which Athena
 | ECO-05 | E-com | Validity | each SKU matches `(APP\|FOO\|CAM\|ACC)-9999` | REJECT | – |
 | ECO-06 | E-com | Consistency | order_total = Σ(qty × unit_price) ± 0.01 | REJECT | – |
 | ECO-07 | E-com | Validity | shipping_region and channel are in the reference domains | REJECT | – |
-| ECO-08 | E-com | **Referential integrity** | cust_ref exists in trusted/customers | FLAG | **34 promoted orders (28 distinct IDs)** |
+| ECO-08 | E-com | **Referential integrity** | cust_ref exists in trusted/customer | FLAG | **34 promoted orders (28 distinct IDs)** |
 | CUS-01 | Customer | Completeness | cust_num is present and 6 digits | REJECT | – |
 | CUS-02 | Customer | Uniqueness | cust_num is unique | REJECT | – |
 | CUS-03 | Customer | Validity | signup_date is valid and not in the future | REJECT | – |

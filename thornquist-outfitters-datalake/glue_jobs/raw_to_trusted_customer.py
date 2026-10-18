@@ -1,13 +1,13 @@
 """
-Glue job: tq-raw-to-trusted-customer
-Raw weekly customer extract (CSV flat file) -> DQ gate -> trusted/customers (Parquet)
+Glue job: thornquist-customer-raw-to-trusted
+Raw weekly customer extract (CSV flat file) -> DQ gate -> trusted/customer (Parquet)
 
-Runs FIRST in the workflow: trusted/customers is the reference set that the POS and
+Runs FIRST in the workflow: trusted/customer is the reference set that the POS and
 e-commerce jobs use for their referential-integrity rule.
 
 Arguments
   --raw_path         s3://<bucket>/raw/customer/            (CSV, header row)
-  --trusted_path     s3://<bucket>/trusted/customers/
+  --trusted_path     s3://<bucket>/trusted/customer/
   --quarantine_path  s3://<bucket>/quarantine/customer/
   --report_path      s3://<bucket>/dq_reports/customer/
   --max_reject_pct   optional, default 5

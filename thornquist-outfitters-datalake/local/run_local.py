@@ -38,6 +38,8 @@ def main():
     ap.add_argument("--sample-dir", required=True)
     ap.add_argument("--lake", default=os.path.join(ROOT, "local_lake"))
     ap.add_argument("--batch-id", default="local-run-001")
+    ap.add_argument("--pos-mode", choices=["gate", "aish"], default="gate",
+                    help="gate = thornquist-pos-dq-gate · aish = Aish's thornquist-pos-raw-to-trusted (simulated)")
     a = ap.parse_args()
     lake = a.lake
     shutil.rmtree(lake, ignore_errors=True)
@@ -57,15 +59,24 @@ def main():
 
     p = lambda *x: os.path.join(lake, *x)  # noqa: E731
     common = {"batch_id": a.batch_id}
-    rc = run_job("raw_to_trusted_customer.py", raw_path=p("raw", "customer"), trusted_path=p("trusted", "customers"),
+    rc = run_job("raw_to_trusted_customer.py", raw_path=p("raw", "customer"), trusted_path=p("trusted", "customer"),
                  quarantine_path=p("quarantine", "customer"), report_path=p("dq_reports", "customer"), **common)
-    rc |= run_job("raw_to_trusted_pos.py", raw_path=p("raw", "pos"), trusted_customers_path=p("trusted", "customers"),
-                  trusted_path=p("trusted", "pos_sales"), quarantine_path=p("quarantine", "pos"),
-                  report_path=p("dq_reports", "pos"), **common)
+    if a.pos_mode == "gate":
+        rc |= run_job("raw_to_trusted_pos.py", raw_path=p("raw", "pos"), trusted_customers_path=p("trusted", "customer"),
+                      trusted_path=p("trusted", "pos"), quarantine_path=p("quarantine", "pos"),
+                      report_path=p("dq_reports", "pos"), **common)
+    else:  # Aish's job, simulated from her description
+        print("\n=== simulate_aish_pos.py (POS_MODE=aish) ===")
+        r = subprocess.run([sys.executable, os.path.join(ROOT, "local", "simulate_aish_pos.py"),
+                            "--raw_path", p("raw", "pos"), "--trusted_path", p("trusted", "pos")],
+                           capture_output=True, text=True)
+        print("\n".join(l for l in (r.stdout + r.stderr).splitlines() if l.startswith("[aish-sim]") or "Error" in l))
+        rc |= r.returncode
     rc |= run_job("raw_to_trusted_ecommerce.py", raw_path=p("raw", "ecommerce"),
-                  trusted_customers_path=p("trusted", "customers"), trusted_path=p("trusted", "ecommerce_order_lines"),
+                  trusted_customers_path=p("trusted", "customer"), trusted_path=p("trusted", "ecommerce"),
                   quarantine_path=p("quarantine", "ecommerce"), report_path=p("dq_reports", "ecommerce"), **common)
-    rc |= run_job("trusted_to_curated.py", trusted_path=p("trusted"), curated_path=p("curated"))
+    rc |= run_job("trusted_to_curated.py", pos_path=p("trusted", "pos"), ecommerce_path=p("trusted", "ecommerce"),
+                  customers_path=p("trusted", "customer"), curated_path=p("curated"))
     if rc:
         sys.exit("A job failed - see output above")
 
@@ -83,8 +94,8 @@ def register_duckdb(lake):
         "thornquist_curated.fact_sales": ("curated/fact_sales/*/*/*.parquet", True),
         "thornquist_curated.dim_customer": ("curated/dim_customer/*.parquet", False),
         "thornquist_curated.agg_daily_sales": ("curated/agg_daily_sales/*.parquet", False),
-        "thornquist_trusted.pos_sales": ("trusted/pos_sales/*/*.parquet", True),
-        "thornquist_trusted.ecommerce_order_lines": ("trusted/ecommerce_order_lines/*/*.parquet", True),
+        "thornquist_trusted.pos": ("trusted/pos/**/*.parquet", True),
+        "thornquist_trusted.ecommerce": ("trusted/ecommerce/*/*.parquet", True),
         "thornquist_quarantine.pos": ("quarantine/pos/*/*.parquet", True),
         "thornquist_quarantine.ecommerce": ("quarantine/ecommerce/*/*.parquet", True),
     }

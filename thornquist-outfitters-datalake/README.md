@@ -44,12 +44,15 @@ in `raw/pos/`, `raw/ecommerce/` and `raw/customer/`, and the raw crawlers have r
 
 **2. Quality gate, curated layer, monitoring and Athena tables**
 ```bash
-export BUCKET=<lake-bucket-name>
-export ALERT_EMAIL=you@example.com      # optional: SNS email on job failure
-bash deploy/deploy.sh                   # creates 4 Glue jobs, workflow tq-pipeline, alarms, workgroup, tables; starts a run
+# bucket defaults to thornquist-outfitters-datalake-672869298071
+export ALERT_EMAIL=you@example.com          # optional: SNS email on job failure
+bash deploy/deploy.sh                       # jobs, workflow thornquist-pipeline, alarms, workgroup, tables; runs nothing
+#   POS_MODE=gate        use thornquist-pos-dq-gate instead of Aish's thornquist-pos-raw-to-trusted
+#   APPLY_GOVERNANCE=1   apply bucket policy + lifecycle (replaces existing ones)
+aws glue start-workflow-run --name thornquist-pipeline
 ```
-Watch **Glue → Workflows → tq-pipeline → History**. A run takes about 5–8 minutes:
-`customer → (pos ∥ ecommerce) → curated`.
+Watch **Glue → Workflows → thornquist-pipeline → History**. A run takes about 5–8 minutes:
+`customer → (POS ∥ e-commerce) → curated`.
 
 **3. Queries and evidence**
 ```bash
@@ -70,7 +73,7 @@ Nothing here is always-on, but deleting the jobs and workgroup keeps the account
 ```bash
 python -m venv .venv && . .venv/bin/activate
 pip install -r requirements-local.txt          # needs Java 17+
-python local/run_local.py --sample-dir <path>/Project1_Thornquist_Outfitters_SampleData
+python local/run_local.py --sample-dir <path>/Project1_Thornquist_Outfitters_SampleData [--pos-mode aish|gate]
 python tests/run_gate_demo.py                  # deliberately broken batch → quarantine + held-back batch
 TQ_MODE=local jupyter nbconvert --execute --to notebook --inplace dashboard/thornquist_dashboard.ipynb
 ```

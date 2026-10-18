@@ -2,7 +2,7 @@
 # Run every sql/analytics/*.sql in Athena and save results to evidence/athena_run/ (CSV).
 # Usage (CloudShell, repo root):  export BUCKET=...; bash deploy/run_queries.sh
 set -euo pipefail
-: "${BUCKET:?export BUCKET first}"
+BUCKET=${BUCKET:-thornquist-outfitters-datalake-672869298071}
 WG=thornquist-wg
 OUT=evidence/athena_run; mkdir -p "$OUT"
 cd "$(dirname "$0")/.."

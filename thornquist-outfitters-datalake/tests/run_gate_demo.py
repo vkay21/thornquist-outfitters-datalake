@@ -6,7 +6,7 @@ Demonstrates the quality gate on deliberately broken input (Week-2 milestone evi
   3. E-commerce v2 file with new fields (promo_code, gift_wrap) -> pipeline keeps working,
      new fields preserved in extra_attributes; bad orders quarantined
 
-Requires a prior `python local/run_local.py ...` so trusted/customers exists.
+Requires a prior `python local/run_local.py ...` so trusted/customer exists.
     python tests/run_gate_demo.py
 """
 import glob
@@ -35,7 +35,7 @@ def job(script, **kw):
 def main():
     shutil.rmtree(DEMO, ignore_errors=True)
     os.makedirs(OUT, exist_ok=True)
-    cust = os.path.join(LAKE, "trusted", "customers")
+    cust = os.path.join(LAKE, "trusted", "customer")
     if not os.path.exists(cust):
         sys.exit("Run local/run_local.py first")
     os.makedirs(os.path.join(DEMO, "raw", "pos"))

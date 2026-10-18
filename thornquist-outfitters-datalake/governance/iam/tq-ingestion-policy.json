@@ -31,16 +31,16 @@
       "Effect": "Allow",
       "Action": ["glue:StartCrawler", "glue:StartJobRun", "glue:StartWorkflowRun"],
       "Resource": [
-        "arn:aws:glue:us-east-1:${ACCOUNT_ID}:crawler/tq-*",
-        "arn:aws:glue:us-east-1:${ACCOUNT_ID}:job/tq-*",
-        "arn:aws:glue:us-east-1:${ACCOUNT_ID}:workflow/tq-*"
+        "arn:aws:glue:us-east-1:${ACCOUNT_ID}:crawler/thornquist-*",
+        "arn:aws:glue:us-east-1:${ACCOUNT_ID}:job/thornquist-*",
+        "arn:aws:glue:us-east-1:${ACCOUNT_ID}:workflow/thornquist-*"
       ]
     },
     {
       "Sid": "LambdaLogs",
       "Effect": "Allow",
       "Action": ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
-      "Resource": "arn:aws:logs:us-east-1:${ACCOUNT_ID}:log-group:/aws/lambda/tq-*"
+      "Resource": "arn:aws:logs:us-east-1:${ACCOUNT_ID}:log-group:/aws/lambda/thornquist-*"
     }
   ]
 }

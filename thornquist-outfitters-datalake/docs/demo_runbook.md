@@ -4,12 +4,12 @@ Record each step with the screen recorder; keep clips short (20–60 s). Save st
 
 | # | Do this | Capture |
 |---|---|---|
-| 1 | `bash deploy/deploy.sh` in CloudShell | The terminal output: jobs, workflow, alarms, `SUCCEEDED` DDL |
-| 2 | Glue → Workflows → `tq-pipeline` → Run → graph view | **Clip:** the graph turning green, customer → pos ∥ ecommerce → curated |
-| 3 | Glue → Jobs → `tq-raw-to-trusted-ecommerce` → run → Output logs | The `[dq]` lines: ECO-02 FAIL 5, ECO-08 WARN 35 |
+| 1 | `bash deploy/deploy.sh` in CloudShell, then `aws glue start-workflow-run --name thornquist-pipeline` | The terminal output: jobs, workflow, alarms, `SUCCEEDED` DDL |
+| 2 | Glue → Workflows → `thornquist-pipeline` → Run → graph view | **Clip:** the graph turning green, customer → pos ∥ ecommerce → curated |
+| 3 | Glue → Jobs → `thornquist-ecommerce-raw-to-trusted` → run → Output logs | The `[dq]` lines: ECO-02 FAIL 5, ECO-08 WARN 35 |
 | 4 | S3 → `quarantine/pos/batch_id=…/` and `quarantine/ecommerce/` | **Quarantined batch visible**, next to `trusted/` (the promoted version) |
 | 5 | S3 → `dq_reports/…/dq_report.json` → Open | The JSON report |
-| 6 | **Bad batch:** upload `tests/fixtures/pos_sales_bad_batch.csv` to `raw/pos_badbatch/`, then run `tq-raw-to-trusted-pos` with job parameter `--raw_path s3://$BUCKET/raw/pos_badbatch/` | **Clip:** the run **FAILS** with `BatchRejected 72.73%`, and the SNS email / EventBridge rule fires |
+| 6 | **Bad batch:** upload `tests/fixtures/pos_sales_bad_batch.csv` to `raw/pos_badbatch/`, then run `thornquist-pos-dq-gate` (deploy with `POS_MODE=gate`) with job parameter `--raw_path s3://$BUCKET/raw/pos_badbatch/` | **Clip:** the run **FAILS** with `BatchRejected 72.73%`, and the SNS email / EventBridge rule fires |
 | 7 | Athena (workgroup `thornquist-wg`): run `SELECT * FROM thornquist_quarantine.dq_reports` | The DQ history table |
 | 8 | `bash deploy/run_queries.sh` (or paste the q01–q08 files into the Athena editor) | Each result plus "Data scanned" |
 | 9 | Benchmark: `sql/benchmark/benchmark_csv_vs_parquet.sql` | Bytes scanned A vs B vs C → `docs/benchmark_results.md` |
