@@ -3,7 +3,7 @@
 # Thornquist - deploy Voke's half (DQ gate, curated layer, Athena tables, monitoring)
 # ON TOP OF Aish's existing resources. Run from AWS CloudShell (us-east-1), repo root:
 #
-#     bash deploy/deploy.sh                          # create/update jobs, workflow, tables (runs NOTHING)
+#     bash deploy/deploy.sh                          # creates/updates AWS resources and Athena DDL; does not start workflow
 #     POS_MODE=gate bash deploy/deploy.sh            # use the DQ-gated POS job instead of Aish's
 #     APPLY_GOVERNANCE=1 bash deploy/deploy.sh       # also apply bucket policy + lifecycle (REPLACES existing ones)
 #     RUN_WORKFLOW=1 bash deploy/deploy.sh           # also start one pipeline run
@@ -11,8 +11,8 @@
 # Aish's resources are reused, never recreated:
 #   bucket thornquist-outfitters-datalake-672869298071 · Glue DB thornquist_retail (raw tables)
 #   crawlers thornquist-{pos,customer,ecommerce}-crawler · Lambda thornquist-ecommerce-ingestion
-#   jobs thornquist-customer-landing-to-raw, thornquist-pos-raw-to-trusted (-> trusted/pos/)
-# Idempotent: safe to re-run in the same session.
+#   jobs thornquist-customer-landing-to-raw, thornquist-pos-raw-to-trusted (-> trusted/pos_final/)
+# WARNING: this script changes AWS resources and runs Athena DDL even when RUN_WORKFLOW=0. Review before running.
 # =============================================================================
 set -euo pipefail
 BUCKET=${BUCKET:-thornquist-outfitters-datalake-672869298071}
@@ -28,15 +28,23 @@ WG=thornquist-wg
 WF=thornquist-pipeline
 S3="s3://${BUCKET}"
 
-# ---- Agreed S3 layout (docs/integration_with_aish.md) -----------------------
-RAW_POS=${RAW_POS:-${S3}/raw/pos/}
-RAW_ECOM=${RAW_ECOM:-${S3}/raw/ecommerce/}
-RAW_CUSTOMER=${RAW_CUSTOMER:-${S3}/raw/customer/}
-JSON_FORMAT=${JSON_FORMAT:-array}     # "lines" if the Lambda writes JSON Lines
-T_POS=${S3}/trusted/pos/
-T_ECOM=${S3}/trusted/ecommerce/
-T_CUSTOMER=${S3}/trusted/customer/
+# ---- Paths aligned to the objects and job output already verified in S3 ----
+# The current files are at raw/ root; do not assume raw/{pos,ecommerce,customer}/ folders.
+RAW_POS=${RAW_POS:-${S3}/raw/pos_sales_2026-08-24_to_2026-08-30.csv}
+RAW_ECOM=${RAW_ECOM:-${S3}/raw/ecommerce_orders.json}
+RAW_CUSTOMER=${RAW_CUSTOMER:-${S3}/raw/customer_extract.csv}
+JSON_FORMAT=${JSON_FORMAT:-array}     # source JSON is a top-level array
+# Existing Aish POS job writes trusted/pos_final/. The optional DQ-gated POS job writes trusted/pos/.
+T_POS_GATE=${T_POS_GATE:-${S3}/trusted/pos/}
+T_POS_AISH=${T_POS_AISH:-${S3}/trusted/pos_final/}
+T_ECOM=${T_ECOM:-${S3}/trusted/ecommerce/}
+T_CUSTOMER=${T_CUSTOMER:-${S3}/trusted/customer/}
 AISH_POS_JOB=thornquist-pos-raw-to-trusted
+if [[ "$POS_MODE" == "gate" ]]; then
+  CURATED_POS_PATH="$T_POS_GATE"
+else
+  CURATED_POS_PATH="$T_POS_AISH"
+fi
 cd "$(dirname "$0")/.."
 echo "Bucket ${BUCKET} · POS_MODE=${POS_MODE} · governance=${APPLY_GOVERNANCE} · run=${RUN_WORKFLOW}"
 
@@ -88,15 +96,15 @@ if [[ "$POS_MODE" == "gate" ]]; then
   POS_JOB=thornquist-pos-dq-gate
   upsert_job "$POS_JOB" raw_to_trusted_pos.py "{${base},
     \"--raw_path\":\"${RAW_POS}\",\"--trusted_customers_path\":\"${T_CUSTOMER}\",
-    \"--trusted_path\":\"${T_POS}\",\"--quarantine_path\":\"${S3}/quarantine/pos/\",
+    \"--trusted_path\":\"${T_POS_GATE}\",\"--quarantine_path\":\"${S3}/quarantine/pos/\",
     \"--report_path\":\"${S3}/dq_reports/pos/\"}"
 else
   POS_JOB=$AISH_POS_JOB
   aws glue get-job --job-name "$POS_JOB" >/dev/null || { echo "Aish's job $POS_JOB not found"; exit 1; }
-  echo "   using Aish's ${POS_JOB} (output ${T_POS}); curated job conforms its schema"
+  echo "   using Aish's ${POS_JOB} (output ${T_POS_AISH}); curated job conforms its schema"
 fi
 upsert_job thornquist-trusted-to-curated trusted_to_curated.py "{${base},
-  \"--pos_path\":\"${T_POS}\",\"--ecommerce_path\":\"${T_ECOM}\",\"--customers_path\":\"${T_CUSTOMER}\",
+  \"--pos_path\":\"${CURATED_POS_PATH}\",\"--ecommerce_path\":\"${T_ECOM}\",\"--customers_path\":\"${T_CUSTOMER}\",
   \"--curated_path\":\"${S3}/curated/\"}"
 
 echo "== 4. Glue workflow ${WF}: customer -> (POS || e-commerce) -> curated =="
@@ -165,6 +173,6 @@ if [[ "$RUN_WORKFLOW" == "1" ]]; then
   echo "   workflow run ${RUN_ID} started - Glue console > Workflows > ${WF} > History (~5-8 min)"
   echo "   then: bash deploy/run_queries.sh"
 else
-  echo "Nothing was run. Start it with: aws glue start-workflow-run --name ${WF}"
+  echo "Workflow was NOT started. AWS resources and Athena DDL were still created/updated. To start later: aws glue start-workflow-run --name ${WF}"
 fi
 echo "Deploy complete."
