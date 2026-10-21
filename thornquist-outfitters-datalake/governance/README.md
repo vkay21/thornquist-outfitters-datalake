@@ -44,7 +44,7 @@ column shows the permission each persona actually gets.
 | Zone / asset | Platform admin (voclabs) | Ingestion role (Lambda / upload) | Glue ETL role | Data steward | Analyst | Regional manager |
 |---|---|---|---|---|---|---|
 | `landing/` | A · manage | **R** · write | read (promote) | I · no access | no access | no access |
-| `raw/` (immutable) | A · manage | **R** · write once | read | C · no access | no access | no access |
+| `raw/` (intended immutable; enforcement not deployed) | A · manage | **R** · write once | read | C · no access | no access | no access |
 | `trusted/` | A | no access | **R** · read/write | C · read | no access | no access |
 | `quarantine/` + `dq_reports/` | A | no access | **R** · write | **R** · read, triage | I (Q8 summary only) | no access |
 | `curated/fact_sales` | A | no access | **R** · write | C · read | **read** (all columns) | **read, Ontario rows only, no cust_num** |
@@ -64,7 +64,7 @@ column shows the permission each persona actually gets.
   request and per file opened. At Thornquist's real scale (40 stores) a day would still be well under 128 MB,
   so `sale_month` partitions plus compaction would be the next step if the partition count grows past
   ~10k.
-* **Lifecycle.** Curated partitions move to **S3 Standard-IA after 90 days**: analysts mostly query the
+* **Lifecycle (proposed; not deployed).** The following transitions describe the intended lifecycle policy, not active S3 configuration. Curated partitions would move to **S3 Standard-IA after 90 days**: analysts mostly query the
   current quarter and IA costs about 45 % less, while 90 days is past IA's 30-day minimum and covers quarter
   close. They move to **Glacier Instant Retrieval after 365 days**, which stays queryable by Athena with
   millisecond access for year-over-year comparisons. Raw moves to Glacier Flexible after 180 days because it is

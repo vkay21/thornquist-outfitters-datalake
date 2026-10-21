@@ -34,7 +34,7 @@ Each run writes `dq_reports/<source>/batch_id=<id>/dq_report.json`, which Athena
 | ECO-05 | E-com | Validity | each SKU matches `(APP\|FOO\|CAM\|ACC)-9999` | REJECT | – |
 | ECO-06 | E-com | Consistency | order_total = Σ(qty × unit_price) ± 0.01 | REJECT | – |
 | ECO-07 | E-com | Validity | shipping_region and channel are in the reference domains | REJECT | – |
-| ECO-08 | E-com | **Referential integrity** | cust_ref exists in trusted/customer | FLAG | **34 promoted orders (28 distinct IDs)** |
+| ECO-08 | E-com | **Referential integrity** | cust_ref exists in trusted/customer | FLAG | DQ report: 35 failed customer-reference checks; saved analytics: 34 orphan orders (28 distinct IDs reported in the existing catalogue). Counts differ by one; cause not yet established. |
 | CUS-01 | Customer | Completeness | cust_num is present and 6 digits | REJECT | – |
 | CUS-02 | Customer | Uniqueness | cust_num is unique | REJECT | – |
 | CUS-03 | Customer | Validity | signup_date is valid and not in the future | REJECT | – |

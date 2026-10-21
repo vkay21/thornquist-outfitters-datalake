@@ -72,8 +72,7 @@ customer records for walk-in purchases.
 - `evidence/local_run/dq_report_ecommerce.json`
 
 The POS report records 185 placeholder-to-null remediations.
-The e-commerce report records 35 customer-reference failures flagged
-by its referential-integrity rule.
+The local e-commerce DQ report records 35 customer-reference failures under rule ECO-08 at the order level. The saved analytics result reports 34 orphan orders and $17,375.20 in orphan revenue in the curated data. These counts differ by one; the precise cause has not yet been established, so they are reported separately rather than treated as equivalent.
 
 ## Conflict 3: Product category representation
 
