@@ -166,16 +166,22 @@ integrity.
 
 The e-commerce batch checked 265 orders, promoted 260, and quarantined
 five duplicate order identifiers. Its rejection rate was 1.89%, also
-below the 5% threshold. The report identified 35 customer-reference
-issues under a warning rule, with 34 rows promoted as flagged. This
-difference between the rule's failed-row count and the promoted flagged
-count should be reviewed before production use.
+below the 5% threshold. The local DQ report records 35
+customer-reference failures under warning rule ECO-08. The saved
+analytics results report 34 orphan orders and $17,375.22 in unmatched
+revenue; the DQ catalogue also records 28 distinct customer IDs. These
+figures are not interchangeable, and the one-count difference has not
+yet been explained. It should be reconciled before production use rather
+than attributed to an unverified cause.
 
 The design uses row-level quarantine and a batch circuit-breaker: if the
-rejection rate exceeds 5%, the batch is intended to fail rather than
-promote a potentially unreliable batch. A deliberately broken-batch
-demonstration is documented in the repository's demo runbook; its AWS
-execution evidence has not yet been demonstrated.
+rejection rate exceeds 5%, the batch fails rather than promoting a
+potentially unreliable batch. The deliberately broken POS batch was
+tested in AWS on October 21, 2026. The gate held back the batch because
+72.73% of rows were rejected, exceeding the 5% threshold. The run
+details and verified report and quarantine outputs are documented in
+`evidence/gate_demo/gate_demo_results.md`. The final presentation,
+screen recording, and screenshots remain pending submission tasks.
 
 ## 7. Curated Model and Analytics
 
