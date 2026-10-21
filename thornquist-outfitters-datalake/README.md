@@ -20,7 +20,7 @@ sessions, budget cap, us-east-1).
 | Path | Owner | Contents |
 |---|---|---|
 | `infra/`, `ingestion/` | Aish | S3 zone setup, three ingestion mechanisms (upload script, Lambda, scheduled Glue), crawlers |
-| `docs/schema_conflicts.md` | Aish | Schema-conflict analysis |
+| `docs/schema-conflicts.md` | Aish | Schema-conflict analysis |
 | `glue_jobs/raw_to_trusted_*.py` | Voke | DQ gate jobs (customer, POS, e-commerce) |
 | `glue_jobs/trusted_to_curated.py` | Voke | Conformed `fact_sales`, `dim_customer`, `agg_daily_sales` |
 | `glue_jobs/lib/` | Voke | Shared helpers + the rule engine (`tq_dq.py`) |
@@ -48,7 +48,8 @@ in `raw/pos/`, `raw/ecommerce/` and `raw/customer/`, and the raw crawlers have r
 export ALERT_EMAIL=you@example.com          # optional: SNS email on job failure
 bash deploy/deploy.sh                       # jobs, workflow thornquist-pipeline, alarms, workgroup, tables; runs nothing
 #   POS_MODE=gate        use thornquist-pos-dq-gate instead of Aish's thornquist-pos-raw-to-trusted
-#   APPLY_GOVERNANCE=1   apply bucket policy + lifecycle (replaces existing ones)
+#   APPLY_GOVERNANCE=1   optional; replaces existing bucket policy/lifecycle settings.
+#                       Do not enable without reviewing current settings and permissions.
 aws glue start-workflow-run --name thornquist-pipeline
 ```
 Watch **Glue → Workflows → thornquist-pipeline → History**. A run takes about 5–8 minutes:
@@ -59,15 +60,15 @@ Watch **Glue → Workflows → thornquist-pipeline → History**. A run takes ab
 bash deploy/run_queries.sh              # runs sql/analytics/*.sql, saves CSVs to evidence/athena_run/
 ```
 
-**4. Governance (optional in a demo session)**
+**4. Governance (optional; verify permissions before applying)**
 ```bash
-bash governance/lakeformation/lf_grants.sh
+# Do not run blindly: grants could alter access, and permissions are unverified.
+# Review governance/lakeformation/lf_grants.sh and the Learner Lab permissions first.
 ```
 
-**5. Dashboard.** Open `dashboard/thornquist_dashboard.ipynb` with `TQ_MODE=athena` and `BUCKET` set.
+**5. Dashboard.** Open `dashboard/thornquist_dashboard.ipynb` in Jupyter. It defaults to local mode and uses local Parquet data; use `TQ_MODE=athena` only when you intentionally want to run queries in AWS and have the required configuration and dependencies.
 
-**6. Before logging off:** `bash deploy/teardown.sh`. The bucket is kept unless `DELETE_BUCKET=1`.
-Nothing here is always-on, but deleting the jobs and workgroup keeps the account tidy across resets.
+**6. Cleanup:** Do not run `deploy/teardown.sh` before the final demonstration or evidence capture. It deletes project resources needed for the live demo. Perform cleanup only after the demo and submission evidence are safely saved, and only if your team no longer needs the AWS environment.
 
 ## Run it locally (no AWS): used for development and the evidence in `evidence/local_run`
 ```bash
@@ -92,10 +93,8 @@ Curated `fact_sales` holds 1,687 lines and $337,946 of revenue. Answers to the e
 in `evidence/local_run/query_results.md`.
 
 ## Key design choices
-* **Four zones plus quarantine.** Promotion rules are in `docs/zones_and_promotion.md`. Raw is immutable
-  (enforced by the bucket policy).
+* **Four zones plus quarantine.** Promotion rules are in `docs/zones_and_promotion.md`. Raw is intended to be immutable; the bucket policy is currently a design artifact and has not been deployed.
 * **Row-level quarantine plus a batch circuit-breaker** (>5 % rejected means nothing is promoted and the job fails).
 * **Partition projection** on the curated tables, so no crawler is needed downstream of trusted and new days
   are queryable immediately.
-* **Learner Lab IAM.** The policies are designed for four separate roles. Enforcement in the lab uses the bucket
-  policy, Lake Formation and Athena workgroup controls. See `governance/README.md`.
+* **Learner Lab IAM.** Separate-role policies are design artifacts. Athena workgroup controls are configured; the S3 bucket policy is not deployed and Lake Formation grants remain unverified in this Learner Lab. See `governance/README.md`.
