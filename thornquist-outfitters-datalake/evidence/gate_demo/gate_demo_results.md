@@ -40,3 +40,20 @@
 |-----------:|:---------------------|--------------:|:--------------------|
 |     910003 | not-a-date           |            10 | ['ECO-03' 'ECO-05'] |
 |     910002 | 2026-08-31T16:30:00Z |           150 | ['ECO-06']          |
+
+## AWS bad-batch test — verified October 21, 2026
+
+- **Glue job:** `thornquist-pos-dq-gate`
+- **AWS Region:** `us-east-1`
+- **Batch ID:** `20261021T162228Z`
+- **Input:** `s3://thornquist-outfitters-datalake-672869298071/raw/pos_badbatch/`
+- **Glue run ID:** `jr_7e2848e7633f07c133edbb455e1c47a219c87c92c9a48efea4409367a29ba6d7`
+- **Job status:** `FAILED` — expected for this rejection test
+- **Rows checked:** 11
+- **Rows quarantined:** 8
+- **Rejection rate:** 72.73%
+- **Maximum allowed rejection rate:** 5%
+- **Batch decision:** `HELD_BACK`
+- **Error:** `BatchRejected: 72.73% rejected > threshold 5.0% - nothing promoted`
+
+The JSON report and quarantine Parquet files were verified under `tmp/badbatch-test/`. The test used isolated temporary output paths rather than the normal trusted POS or curated paths.
