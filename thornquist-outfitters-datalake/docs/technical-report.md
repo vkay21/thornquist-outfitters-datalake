@@ -1,8 +1,8 @@
 # Thornquist Outfitters: Building a Governed Data Lake
 
-**Course:** CCGC 5506 — Emerging Technologies
-**Project:** Mid-Term Project 1
-**Platform:** AWS Academy Learner Lab
+**Course:** CCGC 5506 — Emerging Technologies  
+**Project:** Mid-Term Project 1  
+**Platform:** AWS Academy Learner Lab  
 **Region:** us-east-1
 
 ## 1. Executive Summary
@@ -23,13 +23,15 @@ The project objectives are to implement four storage zones, demonstrate at least
 
 ## 3. Architecture and Data Flow
 
-The architecture is documented in `docs/architecture.mmd`. Amazon S3 provides the storage foundation, while Glue jobs process records through the zones. The landing zone receives incoming files. The raw zone retains source data for traceability and replay. The trusted zone contains standardized Parquet data that has passed the applicable promotion rules. The curated zone contains conformed analytical tables. Separate quarantine and data-quality report prefixes retain rejected records and processing results.
+The architecture is documented in `docs/architecture.mmd`. Amazon S3 provides the storage foundation, while Glue jobs process records through the zones. The landing zone receives incoming files. The raw zone retains source data for traceability and replay. The trusted zone contains standardized Parquet data that has passed the applicable promotion rules. The curated zone contains conformed analytical tables.
 
-The intended ingestion mechanisms are a scripted upload for POS CSV files, an S3 event notification that invokes the e-commerce Lambda function for new JSON files under `landing/`, and a scheduled Glue trigger for the customer extract. The Lambda resource policy permits invocation by S3 from the project bucket, and the bucket notification configuration contains the `landing/` prefix and `.json` suffix filters. The customer daily-ingestion trigger was activated and configured for 00:00 UTC.
+Separate quarantine and data-quality report prefixes retain rejected records and processing results.
 
-Three Glue crawlers cover customer, e-commerce, and POS source locations. Their schedules were configured for 03:00 UTC daily. The curated tables are defined through Athena DDL and use partition projection, reducing the need to crawl the curated output on every update.
+The ingestion mechanisms are a scripted upload for POS CSV files, an S3 event notification configured to invoke the e-commerce Lambda function for new JSON files under `landing/`, and a scheduled Glue trigger for the customer extract. The Lambda resource policy permits invocation by S3 from the project bucket, and the bucket notification configuration contains the `landing/` prefix and `.json` suffix filters. The customer daily-ingestion trigger is activated and configured for 00:00 UTC.
 
-A Glue workflow named `thornquist-pipeline` is configured to run customer ingestion first, then POS and e-commerce processing, followed by curated processing after both sales jobs succeed. The two conditional workflow triggers were initially deactivated and were subsequently activated. Their predicates were verified to require the customer transformation to succeed before POS and e-commerce processing, and both sales transformations to succeed before curated processing. An end-to-end execution after activation remains to be verified.
+Three Glue crawlers cover customer, e-commerce, and POS source locations. Their daily schedules are configured for 03:00 UTC and have been verified in the `SCHEDULED` state. Their next scheduled executions have not yet been observed. The curated tables are defined through Athena DDL and use partition projection, reducing the need to crawl the curated output on every update.
+
+A Glue workflow named `thornquist-pipeline` is configured to run customer ingestion first, then POS and e-commerce processing, followed by curated processing after both sales jobs succeed. The two conditional workflow triggers were activated. Their predicates were verified to require the customer transformation to succeed before POS and e-commerce processing, and both sales transformations to succeed before curated processing. A subsequent workflow execution completed successfully, and all four workflow jobs succeeded.
 
 ## 4. Ingestion and Storage Zones
 
@@ -63,7 +65,7 @@ The POS batch checked 1,051 rows, promoted 1,048, and quarantined three duplicat
 
 The e-commerce batch checked 265 orders, promoted 260, and quarantined five duplicate order identifiers. Its rejection rate was 1.89%, also below the 5% threshold. The report identified 35 customer-reference issues under a warning rule, with 34 rows promoted as flagged. This difference between the rule's failed-row count and the promoted flagged count should be reviewed before production use.
 
-The design uses row-level quarantine and a batch circuit-breaker: if the rejection rate exceeds 5%, the batch is intended to fail rather than promote a potentially unreliable batch. A deliberately broken-batch demonstration is documented in the repository's demo runbook; its AWS execution evidence should be included only if that demonstration was actually run and recorded.
+The design uses row-level quarantine and a batch circuit-breaker: if the rejection rate exceeds 5%, the batch is intended to fail rather than promote a potentially unreliable batch. A deliberately broken-batch demonstration is documented in the repository's demo runbook; its AWS execution evidence has not yet been demonstrated.
 
 ## 7. Curated Model and Analytics
 
@@ -73,11 +75,13 @@ Parquet with Snappy compression was selected for analytical efficiency. The fact
 
 Athena queries provide revenue by channel, daily sales trends, product performance, category analysis, customer-segment behavior, omnichannel customers, demand versus allocation, and data-trust exposure. Eight analytical SQL files are present under `sql/analytics/`.
 
-A verified Athena query returned 639 online sales lines with $123,383.79 in revenue and 1,048 store sales lines with $214,561.78 in revenue. Together, the result was 1,687 lines and $337,945.57. These values describe line-level revenue, not necessarily the number of unique orders.
+A verified Athena query returned 639 online sales lines with $123,383.79 in revenue and 1,048 store sales lines with $214,561.78 in revenue. Together, the result was 1,687 lines and $337,945.57. These values describe line-level revenue, not necessarily the number of unique orders. Store sales contributed approximately 63.5% of the total revenue in this sample.
 
 The top-revenue products included Alpine Hiking Shoe at $21,540.35 and Trailrunner Boot at $21,013.61. Segment analysis reported $198,605.76 in revenue for Standard, $62,736.72 for Silver, $35,772.89 for Walk-in, $23,454.98 for Gold, and $17,375.22 for Unmatched. These results illustrate how the curated layer supports cross-channel, product, and customer analysis.
 
 The repository includes exported dashboard figures for key performance indicators, region and channel, category and channel, daily trends, segment average order value, and omnichannel behavior. These figures provide a dashboard fallback when QuickSight is unavailable in the Learner Lab.
+
+The benchmark compared a CSV table, an unpartitioned Parquet table, and the production partitioned Parquet fact table using the same Athena query. The CSV table scanned 40.65 KB in 474 ms; the unpartitioned Parquet table scanned 0.51 KB in 554 ms; and the partitioned production table scanned 0.58 KB in 715 ms. For this query, unpartitioned Parquet scanned approximately 98.7% less data than CSV. Because the dataset is small, the partitioned table did not outperform unpartitioned Parquet in elapsed time or bytes scanned. These results are documented in `docs/benchmark_results.md` and should not be generalized to larger datasets without further testing.
 
 ## 8. Governance, Security, and Cost
 
@@ -87,20 +91,24 @@ The Learner Lab uses pre-created roles and restricts the ability to create custo
 
 Lake Formation is intended to restrict analysts to curated data and to support more specific controls, including column restrictions and a regional row filter. The repository includes the grant script and permission definition; a live permission should be claimed only when verified in the AWS console or CLI.
 
-The project uses an Athena workgroup with a configured result location and a per-query scan limit. Parquet compression and partitioning reduce the amount of data read for analytical queries. The lifecycle policy documents transitions for older data and expiration for temporary locations. These controls are designed to reduce storage and query costs, but actual cost savings were not benchmarked in this report.
+The project uses an Athena workgroup with a configured result location and a per-query scan limit of 1 GiB. S3 Block Public Access was verified as enabled. Parquet compression and partitioning reduce the amount of data read for analytical queries. The lifecycle policy documents transitions for older data and expiration for temporary locations, but it is not deployed. These controls are designed to reduce storage and query costs, although the small sample and benchmark do not establish production cost savings.
+
+CloudWatch contains POS and e-commerce quarantine-spike alarms. Both alarms were in the `OK` state when checked. The e-commerce Lambda function was `Active` with a successful last update. CloudWatch showed seven recorded invocations across October 15–16, 2026, and zero errors on those two dates. These metrics do not by themselves prove that each invocation was caused by an S3 upload or that every event path has been tested end to end.
 
 ## 9. Testing, Results, and Limitations
 
-Successful Glue runs were observed for customer raw-to-trusted processing, POS quality-gate processing, e-commerce raw-to-trusted processing, and trusted-to-curated processing. The curated job wrote partitioned fact data and the customer dimension and daily aggregate outputs to S3. Athena successfully queried the curated fact table and returned the channel revenue figures reported above.
+A Glue workflow execution completed successfully on October 21, 2026. The customer raw-to-trusted, POS raw-to-trusted, e-commerce raw-to-trusted, and trusted-to-curated jobs all succeeded. The curated job wrote partitioned fact data and the customer dimension and daily aggregate outputs to S3. Athena successfully queried the curated fact table and returned the channel revenue figures reported above.
 
-The customer ingestion trigger is activated, the three crawlers have daily schedules, and the S3 bucket notification is configured for the e-commerce Lambda function. These checks verify configuration, but a configured schedule does not prove that a scheduled run has completed. Similarly, a Lambda resource policy and S3 notification establish the event integration configuration, not a successful invocation caused by a new upload.
+The customer ingestion trigger is activated, all three crawlers have daily schedules in the `SCHEDULED` state, and the S3 bucket notification is configured for the e-commerce Lambda function. These checks verify configuration, but the next scheduled crawler executions have not yet been observed. Similarly, the Lambda resource policy and S3 notification establish the event integration configuration; the recorded invocation metrics do not independently prove that a new upload caused a successful invocation.
 
-The conditional Glue workflow triggers are now activated, and their predicates and actions have been inspected. The latest historical workflow run completed before these triggers were activated, so it does not establish that the newly activated orchestration works end to end. A new workflow execution and its individual job outcomes remain to be verified. Live Lake Formation grants, the intentionally rejected bad-batch run, CloudWatch alerts, and benchmark results should be captured or explicitly identified as unverified if they have not been demonstrated.
+The POS and e-commerce quarantine-spike CloudWatch alarms exist and were in the `OK` state when checked. Lambda metrics showed zero errors on the two dates with reported datapoints. The Athena CSV-versus-Parquet benchmark is documented in `docs/benchmark_results.md`, and its temporary benchmark objects and table definitions were cleaned up after testing.
 
-The sample is small and covers only one week of sales data. Additional testing would be needed for larger volumes, evolving source schemas, retries, late-arriving events, and production access patterns. The e-commerce warning-count discrepancy should also be investigated.
+Live Lake Formation grants remain unverifiable with the available Learner Lab permissions. The intentionally rejected bad-batch run has not been demonstrated in AWS. The S3 bucket policy and lifecycle configuration remain undeployed, and the e-commerce local data-quality report has a warning-count discrepancy: 35 customer-reference issues were reported, while 34 rows were promoted as flagged. These items should be addressed or clearly presented as limitations in the final demonstration.
+
+The sample is small and covers only one week of sales data. Additional testing would be needed for larger volumes, evolving source schemas, retries, late-arriving events, and production access patterns. The configured daily schedules should also be monitored to confirm subsequent executions.
 
 ## 10. Conclusion
 
-The project establishes a practical foundation for a governed retail data lake using AWS managed services. It demonstrates source-specific ingestion and transformations, explicit schema reconciliation, data-quality reporting, quarantine, a conformed sales model, partitioned Parquet storage, and Athena-based analytics. The sample results show that online and store data can be combined for revenue and customer-segment analysis.
+The project establishes a practical foundation for a governed retail data lake using AWS managed services. It demonstrates source-specific ingestion and transformations, explicit schema reconciliation, data-quality reporting, quarantine, a conformed sales model, partitioned Parquet storage, and Athena-based analytics. The sample results show that online and store data can be combined for revenue and customer-segment analysis, while the benchmark illustrates the potential reduction in scanned data from Parquet.
 
-The main remaining focus is to verify a complete automated workflow execution, collect live AWS evidence, and clearly identify governance controls that remain undeployed or unverifiable in the Learner Lab. Separating implemented behavior from intended design makes the deliverable more reliable and provides a clear path from a Learner Lab prototype toward a production-ready architecture.
+The main remaining focus is to collect final live AWS evidence, demonstrate a rejected bad batch if feasible, and clearly identify governance controls that remain undeployed or unverifiable in the Learner Lab. Separating implemented behavior from intended design makes the deliverable more reliable and provides a clear path from a Learner Lab prototype toward a production-ready architecture.
