@@ -7,7 +7,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS thornquist_curated.dim_customer (
   signup_year   int,
   loyalty_tier  string,
   home_region   string,
-  _loaded_at    timestamp
+  `_loaded_at`    timestamp
 )
 STORED AS PARQUET
 LOCATION 's3://${BUCKET}/curated/dim_customer/';

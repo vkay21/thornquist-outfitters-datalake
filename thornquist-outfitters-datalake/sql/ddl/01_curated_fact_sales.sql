@@ -31,7 +31,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS thornquist_curated.fact_sales (
   customer_home_region  string,
   customer_segment      string        COMMENT 'Gold/Silver/Standard/Walk-in/Unmatched',
   dq_flagged            boolean,
-  _loaded_at            timestamp
+  `_loaded_at`            timestamp
 )
 PARTITIONED BY (channel string, sale_date string)
 STORED AS PARQUET

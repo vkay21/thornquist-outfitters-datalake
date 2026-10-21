@@ -1,0 +1,72 @@
+flowchart TD
+    subgraph INGEST["1. Data Ingestion"]
+        POS["POS sales CSV"]
+        ECOM["E-commerce orders JSON"]
+        CUST["Customer extract CSV"]
+        LAMBDA["AWS Lambda<br/>E-commerce ingestion"]
+        C_SCHED["Scheduled Glue trigger<br/>Customer ingestion"]
+    end
+
+    subgraph LAKE["2. Amazon S3 Data Lake"]
+        LAND["Landing zone"]
+        RAW["Raw zone"]
+        TRUST["Trusted zone<br/>Standardized Parquet"]
+        QUAR["Quarantine zone"]
+        DQ["DQ reports"]
+        CUR["Curated zone<br/>Fact sales, customer dimension,<br/>daily sales aggregates"]
+    end
+
+    subgraph PROCESS["3. Processing and Catalog"]
+        GLUE["AWS Glue ETL jobs"]
+        DQG["Data quality gates"]
+        CRAWL["Glue crawlers<br/>Daily schedule: 03:00 UTC"]
+        CAT["AWS Glue Data Catalog"]
+        WF["Configured Glue workflow<br/>Conditional triggers currently deactivated"]
+    end
+
+    subgraph ANALYTICS["4. Analytics"]
+        ATH["Amazon Athena<br/>thornquist-wg"]
+        SQL["8 analytical SQL queries"]
+        DASH["Dashboard figures<br/>Revenue, region, category,<br/>daily trend and customer segments"]
+    end
+
+    subgraph GOV["5. Governance and Monitoring"]
+        IAM["IAM least-privilege policy artifacts"]
+        LF["AWS Lake Formation<br/>Permission design and grants"]
+        CW["CloudWatch monitoring"]
+        LIFE["S3 lifecycle policy artifact"]
+    end
+
+    POS --> LAND
+    ECOM --> LAND
+    LAND -->|"New landing/*.json"| LAMBDA
+    LAMBDA --> RAW
+    CUST --> C_SCHED
+    C_SCHED --> RAW
+
+    LAND --> RAW
+    RAW --> GLUE
+    GLUE --> DQG
+    DQG -->|"Accepted records"| TRUST
+    DQG -->|"Rejected records"| QUAR
+    DQG --> DQ
+    TRUST --> GLUE
+    GLUE --> CUR
+
+    LAND -.-> CRAWL
+    RAW -.-> CRAWL
+    TRUST -.-> CRAWL
+    CUR -.-> CRAWL
+    CRAWL --> CAT
+    CUR --> ATH
+    CAT --> ATH
+    ATH --> SQL
+    SQL --> DASH
+
+    WF -.-> GLUE
+    IAM -.-> LAKE
+    LF -.-> CAT
+    LF -.-> ATH
+    CW -.-> GLUE
+    CW -.-> DQG
+    LIFE -.-> LAKE
