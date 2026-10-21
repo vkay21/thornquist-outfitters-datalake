@@ -5,8 +5,11 @@ blocks creating IAM roles, users and, usually, policies. So this package has **t
 
 1. **Design artifacts**: the least-privilege policies we *would* attach to four separate roles in a real
    account. They are reviewed, validated JSON, but cannot be deployed in the lab.
-2. **What we actually enforce in the lab**: controls the console *does* allow. These are an S3 bucket policy,
-   Lake Formation grants, Athena workgroup limits, S3 lifecycle rules, TLS-only access and default encryption.
+2. **Verified live controls and deployment limitations**: the Athena workgroup has a configured result
+   location and a 1 GiB per-query scan limit, and S3 Block Public Access is enabled. At the last verification,
+   no S3 bucket policy or lifecycle configuration was attached. Lake Formation permissions and administrator
+   settings could not be inspected because the current `voclabs` role was denied access to the relevant APIs.
+   Do not describe the policy and grant files below as deployed controls unless they are verified in AWS.
 
 | File | Deployable in Learner Lab? | Purpose |
 |---|---|---|
@@ -14,27 +17,26 @@ blocks creating IAM roles, users and, usually, policies. So this package has **t
 | `iam/tq-glue-etl-policy.json` | ✗ (design) | Glue role: read `raw/`, write `trusted/`, `quarantine/`, `curated/`. Catalog limited to `thornquist_*`. CloudWatch metrics limited to the `Thornquist/*` namespace. |
 | `iam/tq-analyst-policy.json` | ✗ (design) | Athena in the `thornquist-analyst-wg` workgroup only, its own results prefix, and an explicit deny on upstream zones. Table, column and row visibility is decided by Lake Formation. |
 | `s3/bucket-policy-production.json` | ✗ (design) | Zone isolation by `aws:PrincipalArn` for the four `tq-*` roles |
-| `s3/bucket-policy-learner-lab.json` | **✓** | The same statements with `LabRole`/`voclabs` substituted. It enforces TLS-only access, makes `raw/` immutable (no deletes except by the admin) and makes `curated/` writable only by the ETL role. |
-| `s3/lifecycle-policy.json` | **✓** (stretch) | Storage tiering and expiry by zone. See the cost note below. |
-| `lakeformation/lf_grants.sh` / `lf_permissions.json` | **Partly** | Registers `curated/` and revokes `IAMAllowedPrincipals`. The analyst gets curated tables only. PII columns are hidden. An Ontario row filter is applied for the regional manager. Grants to roles that don't exist fail in the lab, which is expected and documented. |
+| `s3/bucket-policy-learner-lab.json` | Design only; not attached at last verification | Proposed zone controls and TLS-only access. Review carefully before deployment; do not assume the raw zone is immutable. |
+| `s3/lifecycle-policy.json` | Design only; not configured at last verification | Proposed storage tiering and expiry by zone. Actual transitions and expiration are not active unless the configuration is deployed. |
+| `lakeformation/lf_grants.sh` / `lf_permissions.json` | Not live-verified | Proposed curated-data, column, and row-level grants. The current console role could not inspect Lake Formation permissions, and the script must not be run blindly. |
 
 ### Least privilege: how close the lab gets
 
-* **Ingestion vs ETL separation** cannot be enforced in the lab because both run as `LabRole`. The bucket policy
-  still isolates zones from *every other* principal, and `raw/` is immutable even for LabRole. That is the
-  property that matters most for auditability.
-* **Analyst confinement** is enforced by Lake Formation, not IAM. Once `IAMAllowedPrincipals` is revoked on
-  `thornquist_curated`, the catalog grants are authoritative.
+* **Ingestion vs ETL separation** cannot be fully enforced using the lab's shared pre-created service role.
+  The proposed bucket policy describes intended zone isolation, but it was not attached at last verification.
+* **Analyst confinement** is a target control, not a verified live permission boundary. Do not claim that
+  `IAMAllowedPrincipals` has been revoked or that column and row filters are active without evidence from AWS.
 * **Resource scoping everywhere.** No policy uses `"Resource": "*"` for S3. Glue access is limited to
   `thornquist_*` databases, and `PutMetricData` is limited by a namespace condition.
 * **Athena workgroup** `thornquist-wg` enforces its own result location and a 1 GB per-query scan cutoff, which
   guards against cost blowouts. It is created by `deploy/deploy.sh`.
 
-> ⚠️ Lab safety: the bucket policy never denies `s3:PutBucketPolicy` or `s3:DeleteBucketPolicy`, so `voclabs` can
-> always remove it if a mistake locks you out. Remove it before `teardown.sh` empties the bucket, because the
-> `RawIsImmutable` statement blocks LabRole from deleting raw objects.
+> ⚠️ Lab safety: the Learner Lab restricts some IAM and Lake Formation operations. The proposed bucket
+> policy has not been attached. Do not attach it or run the Lake Formation grant script without reviewing the
+> policy, its effects on cleanup, and the permissions available to the current lab role.
 
-## RACI: who should see what
+## Intended RACI and access model (not live-verified)
 
 R = Responsible (does the work) · A = Accountable (owns it) · C = Consulted · I = Informed. The access
 column shows the permission each persona actually gets.
