@@ -29,7 +29,7 @@ The intended ingestion mechanisms are a scripted upload for POS CSV files, an S3
 
 Three Glue crawlers cover customer, e-commerce, and POS source locations. Their schedules were configured for 03:00 UTC daily. The curated tables are defined through Athena DDL and use partition projection, reducing the need to crawl the curated output on every update.
 
-A Glue workflow named `thornquist-pipeline` is configured to run customer ingestion first, then POS and e-commerce processing, followed by curated processing after both sales jobs succeed. During verification, the conditional workflow triggers were deactivated. Therefore, successful individual job runs are evidence of processing, but they do not establish that the complete workflow has been demonstrated successfully in one automated execution.
+A Glue workflow named `thornquist-pipeline` is configured to run customer ingestion first, then POS and e-commerce processing, followed by curated processing after both sales jobs succeed. The two conditional workflow triggers were initially deactivated and were subsequently activated. Their predicates were verified to require the customer transformation to succeed before POS and e-commerce processing, and both sales transformations to succeed before curated processing. An end-to-end execution after activation remains to be verified.
 
 ## 4. Ingestion and Storage Zones
 
@@ -83,7 +83,7 @@ The repository includes exported dashboard figures for key performance indicator
 
 The governance package contains separate least-privilege IAM policy designs for ingestion, Glue ETL, and analysts, together with production and Learner Lab S3 bucket policies. The project also includes Lake Formation grant definitions, a lifecycle policy, and a RACI matrix.
 
-The Learner Lab uses a pre-created `LabRole` and restricts the ability to create custom IAM roles. Consequently, the role-specific IAM policies are design artifacts rather than evidence of deployed roles. The Learner Lab bucket policy and Lake Formation grants are the intended enforcement mechanisms where the environment permits them. The actual deployment status of each control must be reported separately from the presence of its JSON or shell file.
+The Learner Lab uses pre-created roles and restricts the ability to create custom IAM roles. Consequently, the role-specific IAM policies are design artifacts rather than evidence of deployed roles. At the time of verification, no S3 bucket policy was attached and no S3 lifecycle configuration existed. The current `voclabs` role was denied access to Lake Formation resource, permission, and data-lake settings inspection APIs, so live Lake Formation grants and administrator settings could not be verified. These limitations are reported separately from the policy and grant files present in the repository.
 
 Lake Formation is intended to restrict analysts to curated data and to support more specific controls, including column restrictions and a regional row filter. The repository includes the grant script and permission definition; a live permission should be claimed only when verified in the AWS console or CLI.
 
@@ -95,7 +95,7 @@ Successful Glue runs were observed for customer raw-to-trusted processing, POS q
 
 The customer ingestion trigger is activated, the three crawlers have daily schedules, and the S3 bucket notification is configured for the e-commerce Lambda function. These checks verify configuration, but a configured schedule does not prove that a scheduled run has completed. Similarly, a Lambda resource policy and S3 notification establish the event integration configuration, not a successful invocation caused by a new upload.
 
-The conditional Glue workflow triggers were found deactivated during verification. A complete workflow run and a screen recording of the graph turning green therefore remain important evidence items. Live governance grants, the intentionally rejected bad-batch run, CloudWatch alerts, and benchmark results should also be captured or explicitly identified as unverified if they have not been demonstrated.
+The conditional Glue workflow triggers are now activated, and their predicates and actions have been inspected. The latest historical workflow run completed before these triggers were activated, so it does not establish that the newly activated orchestration works end to end. A new workflow execution and its individual job outcomes remain to be verified. Live Lake Formation grants, the intentionally rejected bad-batch run, CloudWatch alerts, and benchmark results should be captured or explicitly identified as unverified if they have not been demonstrated.
 
 The sample is small and covers only one week of sales data. Additional testing would be needed for larger volumes, evolving source schemas, retries, late-arriving events, and production access patterns. The e-commerce warning-count discrepancy should also be investigated.
 
@@ -103,4 +103,4 @@ The sample is small and covers only one week of sales data. Additional testing w
 
 The project establishes a practical foundation for a governed retail data lake using AWS managed services. It demonstrates source-specific ingestion and transformations, explicit schema reconciliation, data-quality reporting, quarantine, a conformed sales model, partitioned Parquet storage, and Athena-based analytics. The sample results show that online and store data can be combined for revenue and customer-segment analysis.
 
-The main remaining focus is to preserve reproducible setup instructions and collect evidence for the full automated workflow, live governance enforcement, and any demonstrations that have not yet been verified. Separating implemented behavior from intended design makes the deliverable more reliable and provides a clear path from a Learner Lab prototype toward a production-ready architecture.
+The main remaining focus is to verify a complete automated workflow execution, collect live AWS evidence, and clearly identify governance controls that remain undeployed or unverifiable in the Learner Lab. Separating implemented behavior from intended design makes the deliverable more reliable and provides a clear path from a Learner Lab prototype toward a production-ready architecture.
