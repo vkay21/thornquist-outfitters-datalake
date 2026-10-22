@@ -23,13 +23,7 @@ zones, with separate quarantine and data-quality report locations. The
 curated layer contains a sales fact table, a customer dimension, and
 daily sales aggregates.
 
-The sample data produced a curated fact table containing 1,687 sales
-lines with approximately \$337,945.57 in revenue. Data-quality
-processing also identified duplicate transactions, placeholder customer
-identifiers, inconsistent dates, and unmatched customer references. The
-project demonstrates how data validation and standardization can improve
-analytical consistency while preserving rejected records for
-investigation.
+The current Athena results contain 1,669 sales lines with $333,411.72 in revenue for August 24–30, 2026. Earlier results differed by 18 lines and $4,533.85; this discrepancy remains unresolved and requires further source-level validation. Data-quality processing identified duplicate transactions, placeholder customer identifiers, inconsistent dates, and unmatched customer references.
 
 ## 2. Business Problem and Objectives
 
@@ -198,12 +192,7 @@ performance, category analysis, customer-segment behavior, omnichannel
 customers, demand versus allocation, and data-trust exposure. Eight
 analytical SQL files are present under `sql/analytics/`.
 
-A verified Athena query returned 639 online sales lines with
-\$123,383.79 in revenue and 1,048 store sales lines with \$214,561.78 in
-revenue. Together, the result was 1,687 lines and \$337,945.57. These
-values describe line-level revenue, not necessarily the number of unique
-orders. Store sales contributed approximately 63.5% of the total revenue
-in this sample.
+The current Athena query returned 621 online sales lines with $118,849.94 in revenue and 1,048 store sales lines with $214,561.78 in revenue. Together, the result was 1,669 lines and $333,411.72. These values describe line-level revenue, not necessarily the number of unique orders. Store sales contributed approximately 64.4% of the total revenue in this sample.
 
 The top-revenue products included Alpine Hiking Shoe at \$21,540.35 and
 Trailrunner Boot at \$21,013.61. Segment analysis reported \$198,605.76
@@ -251,7 +240,11 @@ The AWS bad-batch test was demonstrated on 21 October 2026: 11 rows were checked
 
 The sample is small and covers one week of sales data. Further testing is needed for larger volumes, evolving source schemas, retries, late-arriving events, and production access patterns. The final demonstration should explicitly distinguish verified behavior from configuration that remains proposed or unverified.
 
-## 10. Conclusion
+## 10. Lessons Learned
+
+The project showed that a reliable data lake requires more than moving files into S3: source schemas must be reconciled, quality rules must control promotion, and rejected data must remain available for investigation. Parquet and partitioning support analytical efficiency, although the small benchmark showed that partitioning did not improve performance for every query. The Learner Lab's shared IAM role and restricted inspection permissions also demonstrated why governance must be tested carefully rather than inferred from policy files. Finally, the unresolved e-commerce customer-reference count discrepancy highlights the importance of reconciling quality reports with promoted records before treating results as fully reliable.
+
+## 11. Conclusion
 
 The project establishes a practical foundation for a governed retail
 data lake using AWS managed services. It demonstrates source-specific
