@@ -166,22 +166,16 @@ integrity.
 
 The e-commerce batch checked 265 orders, promoted 260, and quarantined
 five duplicate order identifiers. Its rejection rate was 1.89%, also
-below the 5% threshold. The local DQ report records 35
-customer-reference failures under warning rule ECO-08. The saved
-analytics results report 34 orphan orders and $17,375.22 in unmatched
-revenue; the DQ catalogue also records 28 distinct customer IDs. These
-figures are not interchangeable, and the one-count difference has not
-yet been explained. It should be reconciled before production use rather
-than attributed to an unverified cause.
+below the 5% threshold. The report identified 35 customer-reference
+issues under a warning rule, with 34 rows promoted as flagged. This
+difference between the rule's failed-row count and the promoted flagged
+count should be reviewed before production use.
 
 The design uses row-level quarantine and a batch circuit-breaker: if the
-rejection rate exceeds 5%, the batch fails rather than promoting a
-potentially unreliable batch. The deliberately broken POS batch was
-tested in AWS on October 21, 2026. The gate held back the batch because
-72.73% of rows were rejected, exceeding the 5% threshold. The run
-details and verified report and quarantine outputs are documented in
-`evidence/gate_demo/gate_demo_results.md`. The final presentation,
-screen recording, and screenshots remain pending submission tasks.
+rejection rate exceeds 5%, the batch is intended to fail rather than
+promote a potentially unreliable batch. A deliberately broken-batch
+demonstration is documented in the repository's demo runbook; its AWS
+execution evidence has not yet been demonstrated.
 
 ## 7. Curated Model and Analytics
 
@@ -237,86 +231,25 @@ datasets without further testing.
 
 ## 8. Governance, Security, and Cost
 
-The governance package contains separate least-privilege IAM policy
-designs for ingestion, Glue ETL, and analysts, together with production
-and Learner Lab S3 bucket policies. The project also includes Lake
-Formation grant definitions, a lifecycle policy, and a RACI matrix.
+Governance controls are reported by implementation status so that deployed settings are distinguished from proposed designs. The AWS Academy Learner Lab uses a shared pre-created role and denies some administrative inspection operations.
 
-The Learner Lab uses pre-created roles and restricts the ability to
-create custom IAM roles. Consequently, the role-specific IAM policies
-are design artifacts rather than evidence of deployed roles. At the time
-of verification, no S3 bucket policy was attached and no S3 lifecycle
-configuration existed. The current `voclabs` role was denied access to
-Lake Formation resource, permission, and data-lake settings inspection
-APIs, so live Lake Formation grants and administrator settings could not
-be verified. These limitations are reported separately from the policy
-and grant files present in the repository.
+On 22 October 2026, the S3 bucket policy for `thornquist-outfitters-datalake-672869298071` was successfully saved and confirmed in the console. The policy denies S3 requests using insecure transport (`aws:SecureTransport = false`). S3 Block Public Access was also observed as enabled. **This policy enforces HTTPS-only access but does not implement cross-zone access restrictions** among landing, raw, trusted, and curated data.
 
-Lake Formation is intended to restrict analysts to curated data and to
-support more specific controls, including column restrictions and a
-regional row filter. The repository includes the grant script and
-permission definition; a live permission should be claimed only when
-verified in the AWS console or CLI.
+The three Glue ETL jobs—`thornquist-pos-raw-to-trusted`, `thornquist-ecommerce-raw-to-trusted`, and `thornquist-customer-raw-to-trusted`—all use `LabRole`. The Lambda function `thornquist-ecommerce-ingestion` also uses `LabRole`. Because ingestion and transformation workloads share this role, a broad role-based or prefix-based deny could block legitimate pipeline operations. Cross-zone isolation was therefore not deployed; it remains a design requirement. A production implementation should separate workload and analyst identities, scope their S3 permissions to required prefixes, align those permissions with Lake Formation and the data-lake location role, and test both allowed and denied paths.
 
-The project uses an Athena workgroup with a configured result location
-and a per-query scan limit of 1 GiB. S3 Block Public Access was verified
-as enabled. Parquet compression and partitioning reduce the amount of
-data read for analytical queries. The lifecycle policy documents
-transitions for older data and expiration for temporary locations, but
-it is not deployed. These controls are designed to reduce storage and
-query costs, although the small sample and benchmark do not establish
-production cost savings.
+The Lake Formation Data permissions page returned `AccessDenied` for `lakeformation:ListPermissions`. The curated database details page also returned `AccessDenied` for `ram:ListPrincipals`. On the Lambda permissions page, `iam:GetPolicy` was denied by an explicit deny in the Learner Lab identity-based policy. These are observed limitations for specific inspection operations; they do not prove that every Lake Formation grant or every Lambda operation is blocked. No Lake Formation grant was submitted. The proposed analyst permission design is recorded in `governance/lakeformation/lf_permissions.json`: a dedicated analyst principal would receive `DESCRIBE` on `thornquist_curated` and `SELECT`/`DESCRIBE` on `fact_sales`, `dim_customer`, and `agg_daily_sales`, without access to upstream zones. This is a design artifact, not an active grant.
 
-CloudWatch contains POS and e-commerce quarantine-spike alarms. Both
-alarms were in the `OK` state when checked. The e-commerce Lambda
-function was `Active` with a successful last update. CloudWatch showed
-seven recorded invocations across October 15--16, 2026, and zero errors
-on those two dates. These metrics do not by themselves prove that each
-invocation was caused by an S3 upload or that every event path has been
-tested end to end.
+The S3 lifecycle configuration remains undeployed. It is treated as a stretch goal rather than a completed core control. The Athena workgroup's configured result location and scan limit, Parquet compression, and partitioning support cost management. CloudWatch quarantine-spike alarms were observed in the `OK` state when checked. These measures should not be presented as evidence of production-scale cost savings.
 
 ## 9. Testing, Results, and Limitations
 
-A Glue workflow execution completed successfully on October 21, 2026.
-The customer raw-to-trusted, POS raw-to-trusted, e-commerce
-raw-to-trusted, and trusted-to-curated jobs all succeeded. The curated
-job wrote partitioned fact data and the customer dimension and daily
-aggregate outputs to S3. Athena successfully queried the curated fact
-table and returned the channel revenue figures reported above.
+The Glue workflow completed successfully on 21 October 2026, and Athena returned the reported curated sales results. Governance verification on 22 October 2026 confirmed the saved S3 HTTPS-only policy and the shared `LabRole` assignment across the three Glue jobs and the e-commerce Lambda function. S3 Block Public Access was observed as enabled.
 
-The customer ingestion trigger is activated, all three crawlers have
-daily schedules in the `SCHEDULED` state, and the S3 bucket notification
-is configured for the e-commerce Lambda function. These checks verify
-configuration, but the next scheduled crawler executions have not yet
-been observed. Similarly, the Lambda resource policy and S3 notification
-establish the event integration configuration; the recorded invocation
-metrics do not independently prove that a new upload caused a successful
-invocation.
+Cross-zone access restrictions and Lake Formation analyst grants are not deployed or verified. Lake Formation returned access-denied errors for `lakeformation:ListPermissions` and `ram:ListPrincipals`; IAM policy inspection returned an access-denied error for `iam:GetPolicy` on the Lambda permissions page. The report records these as Learner Lab limitations for the specific operations observed, not as proof that every related operation is unavailable. The analyst permissions remain proposed only. The lifecycle configuration was not created.
 
-The POS and e-commerce quarantine-spike CloudWatch alarms exist and were
-in the `OK` state when checked. Lambda metrics showed zero errors on the
-two dates with reported datapoints. The Athena CSV-versus-Parquet
-benchmark is documented in `docs/benchmark_results.md`, and its
-temporary benchmark objects and table definitions were cleaned up after
-testing.
+The AWS bad-batch test was demonstrated on 21 October 2026: 11 rows were checked, 8 were quarantined, and the rejection rate was 72.73%, exceeding the 5% threshold. The batch was held back with `BatchRejected`, and the JSON report and quarantine Parquet files were verified under the isolated `tmp/badbatch-test/` prefix. The e-commerce data-quality report also has a warning-count discrepancy: 35 customer-reference issues were reported, while 34 rows were promoted as flagged. This discrepancy should be described as a limitation until reconciled.
 
-Live Lake Formation grants remain unverifiable with the available
-Learner Lab permissions. The AWS bad-batch test was demonstrated on
-October 21, 2026: 11 rows were checked, 8 were quarantined, and the
-rejection rate was 72.73%, exceeding the 5% threshold. The batch was
-held back with BatchRejected, and the JSON report and quarantine Parquet
-files were verified under the isolated `tmp/badbatch-test/` prefix. The
-S3 bucket policy and lifecycle configuration remain undeployed, and the
-e-commerce local data-quality report has a warning-count discrepancy: 35
-customer-reference issues were reported, while 34 rows were promoted as
-flagged. These items should be addressed or clearly presented as
-limitations in the final demonstration.
-
-The sample is small and covers only one week of sales data. Additional
-testing would be needed for larger volumes, evolving source schemas,
-retries, late-arriving events, and production access patterns. The
-configured daily schedules should also be monitored to confirm
-subsequent executions.
+The sample is small and covers one week of sales data. Further testing is needed for larger volumes, evolving source schemas, retries, late-arriving events, and production access patterns. The final demonstration should explicitly distinguish verified behavior from configuration that remains proposed or unverified.
 
 ## 10. Conclusion
 

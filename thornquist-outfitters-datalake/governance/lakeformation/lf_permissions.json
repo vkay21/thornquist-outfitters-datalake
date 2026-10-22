@@ -1,25 +1,58 @@
 {
-  "description": "Lake Formation permission set (design artifact). Mirrors lf_grants.sh.",
-  "prerequisites": [
-    "Data lake admin: voclabs console role",
-    "Registered location: s3://${BUCKET}/curated",
-    "IAMAllowedPrincipals grants revoked on thornquist_curated so LF is authoritative"
+  "artifact_status": "DESIGN_ONLY_NOT_DEPLOYED_OR_VERIFIED",
+  "project": "Thornquist Outfitters Governed Retail Data Lake",
+  "observed_date": "2026-10-22",
+  "aws_region": "us-east-1",
+  "catalog_database": "thornquist_curated",
+  "hypothetical_principal": {
+    "name": "thornquist-analyst",
+    "note": "Placeholder only. No dedicated analyst role was identified in the Learner Lab role list; do not substitute LabRole and claim analyst isolation."
+  },
+  "database_permissions": [
+    "DESCRIBE"
   ],
-  "grants": [
-    {"principal": "tq-glue-etl-role (LabRole in lab)", "resource": "DataLocation s3://${BUCKET}/curated", "permissions": ["DATA_LOCATION_ACCESS"]},
-    {"principal": "tq-glue-etl-role (LabRole in lab)", "resource": "Database thornquist_curated", "permissions": ["CREATE_TABLE", "ALTER", "DESCRIBE"]},
-    {"principal": "tq-glue-etl-role (LabRole in lab)", "resource": "Table thornquist_curated.*", "permissions": ["SELECT", "INSERT", "ALTER", "DESCRIBE"]},
-    {"principal": "tq-analyst-role", "resource": "Database thornquist_curated", "permissions": ["DESCRIBE"]},
-    {"principal": "tq-analyst-role", "resource": "Table thornquist_curated.fact_sales", "permissions": ["SELECT", "DESCRIBE"]},
-    {"principal": "tq-analyst-role", "resource": "Table thornquist_curated.agg_daily_sales", "permissions": ["SELECT", "DESCRIBE"]},
-    {"principal": "tq-analyst-role", "resource": "Table thornquist_curated.dim_customer", "columns_excluded": ["first_name", "last_name", "email"], "permissions": ["SELECT"]},
-    {"principal": "tq-regional-manager-ontario-role", "resource": "DataCellsFilter ontario_only on thornquist_curated.fact_sales", "row_filter": "region = 'Ontario'", "columns_excluded": ["cust_num"], "permissions": ["SELECT"]},
-    {"principal": "tq-data-steward-role", "resource": "Table thornquist_trusted.*", "permissions": ["SELECT", "DESCRIBE"]},
-    {"principal": "tq-data-steward-role", "resource": "Table thornquist_quarantine.*", "permissions": ["SELECT", "DESCRIBE"]}
+  "table_permissions": {
+    "fact_sales": [
+      "SELECT",
+      "DESCRIBE"
+    ],
+    "dim_customer": [
+      "SELECT",
+      "DESCRIBE"
+    ],
+    "agg_daily_sales": [
+      "SELECT",
+      "DESCRIBE"
+    ]
+  },
+  "excluded_zone_access": [
+    "landing/",
+    "raw/",
+    "trusted/"
   ],
-  "explicitly_not_granted": [
-    "tq-analyst-role: any permission on thornquist_raw / thornquist_trusted / thornquist_quarantine",
-    "tq-analyst-role: PII columns of dim_customer",
-    "Anyone except ETL: INSERT/ALTER/DROP on curated tables"
+  "implementation_status": {
+    "grant_deployed": false,
+    "grant_verified": false,
+    "observed_blockers": [
+      "Lake Formation console returned AccessDenied for lakeformation:ListPermissions.",
+      "Curated database details page returned AccessDenied for ram:ListPrincipals.",
+      "Lambda permissions page returned AccessDenied for iam:GetPolicy due to an explicit deny in the Learner Lab identity-based policy."
+    ]
+  },
+  "shared_execution_role_evidence": {
+    "glue_jobs": [
+      "thornquist-pos-raw-to-trusted",
+      "thornquist-ecommerce-raw-to-trusted",
+      "thornquist-customer-raw-to-trusted"
+    ],
+    "lambda_function": "thornquist-ecommerce-ingestion",
+    "role_name": "LabRole",
+    "note": "All four inspected workload configurations use the shared LabRole. Cross-zone restrictions were not deployed because workload access requirements have not been separated and verified."
+  },
+  "notes": [
+    "This JSON documents intended permissions; it is not an AWS API payload and must not be represented as an active grant.",
+    "The deployed S3 bucket policy denies insecure transport only; it does not enforce cross-zone isolation.",
+    "Lake Formation grants alone do not guarantee S3 object isolation if alternate IAM/S3 access paths remain.",
+    "A real deployment must align Lake Formation grants, IAM policies, S3 bucket policy, and the data-lake location role."
   ]
 }
