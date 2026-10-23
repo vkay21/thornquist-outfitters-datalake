@@ -56,7 +56,7 @@ These instructions describe the intended deployment workflow. Confirm resource n
 
 ```bash
 git clone https://github.com/vkay21/thornquist-outfitters-datalake.git
-cd thornquist-outfitters-datalake
+cd thornquist-outfitters-datalake/thornquist-outfitters-datalake
 ```
 
 ### 2. Configure ingestion and source data
